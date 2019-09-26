@@ -7,7 +7,6 @@ import socket
 from enum import Enum
 from pathlib import Path
 import os
-from filelock import SoftFileLock
 import shutil
 import io
 
@@ -34,10 +33,10 @@ class Server:
     path: str
 
 
-    def __init__(self, name:str, mnt_path:str):
+    def __init__(self, name:str, path:str):
         self.name = name
-        self.path = mnt_path
-        self.connection = ServerConnection('xdglpdcdap002.nyumc.org')
+        self.path = path
+        self.connection = ServerConnection(path)
         config = configparser.ConfigParser()
 
         config_file = io.BytesIO()
@@ -96,7 +95,8 @@ class TaskData:
             ScanFile = self.scan_file,
             AdjustmentFilesCount = str(len(self.adjustment_files)) if self.adjustment_files else '0',
             ParamValue = self.param_value or '0',
-            EMailNotification = self.email_notification
+            EMailNotification = self.email_notification,
+            PatientName = self.patient_name
         )
 
         config['Information'] = dict(
@@ -109,7 +109,6 @@ class TaskData:
                 YarraClient = self.yarra_client,#   "SAC");
                 ClientVersion = self.client_version,# SAC_VERSION);
                 ACC = str(self.acc_number) if self.acc_number is not None else '',
-                PatientName = self.patient_name
         )
         
         io_file = io.StringIO()

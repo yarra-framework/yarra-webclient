@@ -1,4 +1,3 @@
-import fs.smbfs
 import socket
 import io
 from pathlib import Path
@@ -38,9 +37,11 @@ class ServerConnection:
             raise Exception(f'{path.name} exists on server')
 
         self.conn.storeFile('YarraServer',path.name,file_obj)
+
     def get(self, file_name, file_obj):
         self.conn.retrieveFile('YarraServer',file_name,file_obj)
         file_obj.seek(0)
+
 if __name__ == "__main__":
     test = ServerConnection('xdglpdcdap002.nyumc.org')
     test.lock_task('test2')
