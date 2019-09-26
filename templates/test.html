@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	<script src="resumable.js"></script>
+</head>
+<body>
+<style>
+#progress-outer {
+	height: 0px;
+	transition: height 0.4s linear;
+}
+#progress-outer.expanded {
+	height: 40px;
+}
+
+</style>
+<div class="container my-5">
+<form id="form" action="/submit_task" method="post"  class="needs-validation" novalidate>
+  <div class="form-group row">
+    <label for="files" class="col-sm-2 col-form-label" >File</label>
+        <div class="col-sm-10">
+    		<input type="file" class="form-control " id="files" name="file" required/>
+		    <div class="invalid-feedback">
+			    A file is required.
+		    </div>
+
+    	</div>
+  </div>
+<div class="card my-2">
+  <div class="card-header">
+    Scan information
+  </div>
+  <div class="card-body" >
+  <div class="form-group row">
+    <label for="patientName" class="col-sm-2 col-form-label">Patient Name</label>
+    <div class="col-sm-10">
+    <input type="text" name="patient_name" class="form-control" id="patientName" placeholder="Patient name" required>
+	    <div class="invalid-feedback">
+		    A patient name is required.
+	    </div>
+	</div>
+  </div>
+  <div class="form-group row">
+    <label for="accession" class="col-sm-2 col-form-label">Accession number</label>
+    <div class="col-sm-10">
+    <input type="text" name="accession" class="form-control" id="accession" placeholder="Accession">
+	</div>
+  </div>
+  <div class="form-group row">
+    <label for="taskId" class="col-sm-2 col-form-label">Task ID</label>
+    <div class="col-sm-10">
+    <input type="text" name="taskid" class="form-control" id="taskId" placeholder="Task ID" required>
+	</div>
+  </div>
+</div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header">
+	Reconstruction settings
+  </div>
+  <div class="card-body">
+    <h5 class="card-title"></h5>
+      <div class="form-group row">
+	    <label for="mode" class="col-sm-2 col-form-label">Mode</label>
+	    <div class="col-sm-10">
+	    <select  name="mode"  class="form-control" id="mode" required>
+	    	{% for mode in server.modes %}
+	    	<option value="{{mode}}">{{ server.modes[mode].name }}</option>
+	    	{% endfor %}
+	    </select>
+   		</div>
+   	  </div>
+	  <div class="form-group row">
+	    <label for="notification" class="col-sm-2 col-form-label">Notification</label>
+	    <div class="col-sm-10">
+	    <input name='notification'  type="text" class="form-control" id="notification" placeholder="">
+		</div>
+	  </div>
+      <div class="form-group row">
+	    <label for="processing" class="col-sm-2 col-form-label">Processing</label>
+	    <div class="col-sm-10">
+	    <select name='processing'  class="form-control" id="processing">
+	    	<option>Default</option>
+	    	<option>Night</option>
+	    	<option>Priority</option>
+	    </select>
+   		</div>
+   	  </div>
+
+	</div>
+</div>
+<div class="form-group row">
+    <div class="col-12">
+		<button class="btn btn-primary float-right" type="submit" id="submit_btn">Send Task</button>
+    	<button class="btn btn-danger float-right mx-2 d-none" type="button" id="cancel_btn">Cancel</button>
+
+    </div>
+</div>
+</form>
+</div>
+
+<div class="progress fixed-bottom m-2" id="progress-outer" >
+  <div id="progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>
+</div>
+
+<script>
+  window.addEventListener('load', function() {
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    var forms = document.getElementsByClassName('needs-validation');
+    // Loop over them and prevent submission
+	var uploader = new Resumable({target:'/resumable_upload', chunkSize:1024*1024*10});
+	var progress = document.getElementById('progress');
+
+	  if (!("Notification" in window)) {
+	  }  // Let's check whether notification permissions have already been granted
+	  else if (Notification.permission === "granted") {
+	  }  // Otherwise, we need to ask the user for permission
+	  else if (Notification.permission !== "denied") {
+	    Notification.requestPermission().then(function (permission) {
+	      // If the user accepts, let's create a notification
+	      if (permission === "granted") {
+	        var notification = new Notification("Hi there!");
+	      }
+	    });
+	  }
+    document.getElementById('cancel_btn').onclick = function() {
+    	uploader.cancel();
+    };	
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+  		try {
+	   		if (form.checkValidity()) {
+	        	var file = document.querySelector('#files').files[0]
+				uploader.isComplete = false;
+				uploader.wasCanceled = false;
+	        	console.log(file);
+				uploader.addFile(file);
+			} else {
+			    form.classList.add('was-validated');
+			}
+		} finally {
+		    event.preventDefault();
+		    event.stopPropagation();
+		}
+      }, false);
+    });
+
+	uploader.on('fileAdded', function(file, e){
+	    uploader.upload();
+	    document.getElementById('progress-outer').classList.toggle("expanded");
+	    document.getElementById('submit_btn').disabled = true;
+	    document.getElementById('cancel_btn').classList.toggle('d-none');
+
+	    Array.from(form.elements).forEach(field => field.setAttribute("readonly",true));
+	});
+	uploader.on('fileProgress', (file, ratio) => {
+		progress.style.width = 100*file.progress()+'%';
+		progress.textContent = 'Uploading... ' + Math.round(100*file.progress(),2)+'%';
+	});
+	uploader.on('error', (message,file) => {
+		new Notification(message);
+		console.log('error', message, file);
+	})
+	uploader.on('beforeCancel', () => {
+		console.log('was canceled');
+		uploader.wasCanceled = true;
+	})
+
+	uploader.on('complete', () => {
+		if (uploader.isComplete) {
+			return false; 
+		}
+		uploader.isComplete = true;
+		function resetForm(form) {
+			document.getElementById('progress-outer').classList.toggle("expanded");
+			document.getElementById('cancel_btn').classList.toggle('d-none');
+	    	document.getElementById('submit_btn').disabled = false;
+	    	Array.from(form.elements).forEach(field => field.removeAttribute("readonly"));
+		}
+		var form = document.getElementById('form')
+		if (uploader.wasCanceled) {
+			resetForm(form);
+			return;
+		}
+		progress.classList.toggle('bg-info');
+		progress.textContent = 'Finalizing...';
+		var body = new FormData(form)
+		console.log('Complete');
+		body.set('file',body.get('file').name);
+		fetch(form.action, {
+		    method: form.method,
+		    body: body
+		}).then((response) => {
+			resetForm(form);
+			document.getElementById('progress').classList.toggle('bg-info');
+		    if (!response.ok) {
+		    	new Notification("submission error");
+		        throw Error(response.statusText);
+			}
+		}).then( (res) => {
+			new Notification("task submitted");
+		})
+	});
+
+
+  }, false);
+
+
+  document.querySelector('#files').addEventListener("change", function () {
+		// var uploader = new Resumable({target:'/resumable_upload', chunkSize:1024*1024*10});
+		// uploader.on('fileAdded', function(file, event){
+		//     uploader.upload();
+		// });
+		//uploader.addFile(this.files[0])
+		document.getElementById('taskId').value = this.files[0].name.split('.').slice(0, -1).join('.')
+		readHeader(this.files[0], function(header){
+			try {
+				var patient_name = getTagValue(header,'PatientName');
+				document.getElementById('patientName').value = patient_name;
+			} catch(err) {
+				var patient_name = null
+			}
+			var protocol_name = getTagValue(header, 'ProtocolName');
+
+			console.log(protocol_name);
+			// console.log(utf8(header));
+		})
+	}, false);
+
+  function readHeader(file, onload) {
+    var reader = new FileReader();
+	reader.readAsArrayBuffer(file.slice(0, 11244)); // This might be too short for some files and fail
+	reader.onloadend = function(evt) {
+      if (evt.target.readyState == FileReader.DONE) { // DONE == 2
+		var data = new Uint32Array(evt.target.result) // Interpret as a bunch of 32bit uints
+		var preamble = new Uint8Array(evt.target.result) // Interpret as a bunch of bytes
+		var num_scans,meas_id,file_id,header_start
+		var file_format
+		if (data[0] < 10000 && data[1] <= 64) { // Looks like a VD format
+			file_format = 'VD'
+			var num_scans = data[1]; // The number of measurements in this file
+			// if (num_scans > 1) { // Only supporting simple files for now
+			// 	alert("Only supports dat files with a single scan.");
+			// 	return;
+			// }
+    		measID = data[2];  // Unused, but this is where they are
+    		fileID = data[3];
+    		header_start = data[4]; // Where the header of the first measurement starts 
+
+		    // % header_start: points to beginning of header, usually at 10240 bytes
+		    console.log(num_scans,measID,fileID,header_start)
+		    // console.log(new TextDecoder("utf-8").decode(new Uint8Array(preamble).slice(0,11240)))
+		    //var measOffset = new Uint64Array(data.slice(4,6))[0]
+		    //var measLength = new Uint64Array(data.slice(6,8))[0]
+		} else {
+			file_format = 'VB'
+			header_start = 0 // There's only one measurement in VB files, so it starts at 0.
+		}
+		var header_size = data[header_start/4];
+		if (header_size <= 0) {
+			alert("Unknown file format.")
+			return;
+		}
+
+		var headerBlob = file.slice(header_start+19,header_start+header_size); // skip the binary part
+		var headerReader = new FileReader();
+		headerReader.onload = function(event) {
+		    var header = new Uint8Array(event.target.result);
+		    onload(header);
+		    
+		}
+		headerReader.readAsArrayBuffer(headerBlob);
+   	  }
+    }
+  }	
+
+function getTagValue(data,tagName,do_replace,start=0) {
+  loc = find_tag(data,'ParamString."'+tagName+'"',start);
+  if (loc == -1) return -1;
+
+  // Find the braces that surround the tag contents
+  braces_begin = data.indexOf(char('{'),loc)+1
+
+  braces_end = data.indexOf(char('}'),loc)
+
+  // looks like } {
+  if (braces_begin > braces_end ) throw new Error('Invalid tag detected');
+
+  var tag_contents = data.subarray(braces_begin,braces_end)
+
+  // Find the last quoted thing in the subarray...
+  var val_end = tag_contents.lastIndexOf(char('"'))
+  if (val_end == -1) return braces_end; // oh, it's just empty, never mind
+  var val_begin = tag_contents.lastIndexOf(char('"'),val_end-1)+1
+  if (val_begin == -1) throw new Error('Invalid tag detected'); // Can't find the opening quote
+
+  var tag_value = tag_contents.subarray(val_begin,val_end);
+  return utf8(tag_value);
+  // found_tag_values.add(utf8(tag_value));
+  // tag_value.set(asUint8Array(do_replace(val_end-val_begin)));
+  // return braces_end+1;
+}
+
+function find_tag(data, name, start) {
+  var s = start || 0
+  var name = asUint8Array(name);
+  do {
+	  var tag_begin = data.indexOf(char('<'),s)
+	  if ( tag_begin == -1 ) return -1
+	  var tag_begin_check = data.indexOf(char('<'),tag_begin+1)
+	  var tag_end = data.indexOf(char('>'),tag_begin+1)
+	  if (tag_begin_check > -1 && tag_begin_check < tag_end) {
+	  	throw new Error('Invalid tag detected');
+	  }
+	  var tag_value = new Uint8Array(data.slice(tag_begin+1,tag_end))
+	  // console.log("tag_value", tag_value, new TextDecoder("utf-8").decode(tag_value))
+	  // console.log("name", name, new TextDecoder("utf-8").decode(name))
+	  s = tag_end+1
+	  if (arrays_equal(tag_value,name)) {
+	  	return tag_end
+	  }
+   } while (tag_begin != -1)
+   return -1
+}
+
+function utf8(t){
+	return new TextDecoder("utf-8").decode(t)
+}
+
+function asUint8Array(input) {
+  if (input instanceof Uint8Array) {
+    return input;
+  } else if (typeof(input) === 'string') {
+    // This naive transform only supports ASCII patterns. UTF-8 support
+    // not necessary for the intended use case here.
+    var arr = new Uint8Array(input.length);
+    for (var i = 0; i < input.length; i++) {
+      var c = input.charCodeAt(i);
+      if (c > 127) {
+        //throw new TypeError("Only ASCII patterns are supported");
+      }
+      arr[i] = c;
+    }
+    return arr;
+  } else {
+    // Assume that it's already something that can be coerced.
+    return new Uint8Array(input);
+  }
+}
+
+function arrays_equal(dv1, dv2)
+{
+    if (dv1.length != dv2.length) return false;
+    for (var i=0; i < dv1.length; i++)
+    {
+        if (dv1[i] != dv2[i]) return false;
+    }
+    return true;
+}
+function char(c) {
+	return c.charCodeAt(0)
+}
+
+
+
+</script>
+</body>
+</html>
