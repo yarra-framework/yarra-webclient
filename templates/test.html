@@ -56,6 +56,8 @@
     <input type="text" name="taskid" class="form-control" id="taskId" placeholder="Task ID" required>
 	</div>
   </div>
+  <input name='protocol'  type="hidden" class="form-control" id="protocol" value="Unknown">
+
 </div>
 </div>
 
@@ -65,14 +67,29 @@
   </div>
   <div class="card-body">
     <h5 class="card-title"></h5>
+
+      <div class="form-group row">
+	    <label for="mode" class="col-sm-2 col-form-label">Server</label>
+	    <div class="col-sm-10">
+	    <select  name="server"  class="form-control" id="server" required>
+		    {% for server in servers %}
+	    	<option value="{{server.name}}">{{ server.name }}</option>
+	    	{% endfor %}
+	    </select>
+   		</div>
+   	  </div>
+
+
       <div class="form-group row">
 	    <label for="mode" class="col-sm-2 col-form-label">Mode</label>
-	    <div class="col-sm-10">
-	    <select  name="mode"  class="form-control" id="mode" required>
+	    <div class="col-sm-10" id="modes">
+	    {% for server in servers %}
+	    <select name="mode_{{server.name}}"  class="form-control d-none" id="mode_{{server.name}}" required>
 	    	{% for mode in server.modes %}
 	    	<option value="{{mode}}">{{ server.modes[mode].name }}</option>
 	    	{% endfor %}
 	    </select>
+	    {% endfor %}
    		</div>
    	  </div>
 	  <div class="form-group row">
@@ -110,12 +127,25 @@
 
 <script>
   window.addEventListener('load', function() {
-    // Fetch all the forms we want to apply custom Bootstrap validation styles to
     var forms = document.getElementsByClassName('needs-validation');
-    // Loop over them and prevent submission
 	var uploader = new Resumable({target:'/resumable_upload', chunkSize:1024*1024*10});
 	var progress = document.getElementById('progress');
 
+	function select_server(server) { 
+		Array.from(document.querySelectorAll('#modes select')).forEach( (e) => {
+			if (e.id == "mode_"+server) {
+				e.classList.remove('d-none');
+				e.removeAttribute('disabled');
+			} else {
+				e.classList.add('d-none');
+				e.setAttribute('disabled', true);
+			}
+		})
+	}
+	select_server('{{ servers[0].name }}')
+	document.getElementById('server').onchange = function(e) {
+		select_server(e.target.value);
+	}
 	  if (!("Notification" in window)) {
 	  }  // Let's check whether notification permissions have already been granted
 	  else if (Notification.permission === "granted") {
@@ -151,12 +181,11 @@
     });
 
 	uploader.on('fileAdded', function(file, e){
-	    uploader.upload();
 	    document.getElementById('progress-outer').classList.toggle("expanded");
 	    document.getElementById('submit_btn').disabled = true;
 	    document.getElementById('cancel_btn').classList.toggle('d-none');
-
 	    Array.from(form.elements).forEach(field => field.setAttribute("readonly",true));
+	    uploader.upload();
 	});
 	uploader.on('fileProgress', (file, ratio) => {
 		progress.style.width = 100*file.progress()+'%';
@@ -172,11 +201,11 @@
 	})
 
 	uploader.on('complete', () => {
-		if (uploader.isComplete) {
+		if (uploader.isComplete) { // sometimes this gets triggered several times??
 			return false; 
 		}
 		uploader.isComplete = true;
-		function resetForm(form) {
+		function resetForm(form) { 
 			document.getElementById('progress-outer').classList.toggle("expanded");
 			document.getElementById('cancel_btn').classList.toggle('d-none');
 	    	document.getElementById('submit_btn').disabled = false;
@@ -187,11 +216,13 @@
 			resetForm(form);
 			return;
 		}
-		progress.classList.toggle('bg-info');
 		progress.textContent = 'Finalizing...';
-		var body = new FormData(form)
-		console.log('Complete');
+		progress.classList.toggle('bg-info');
+
+		var body = new FormData(form)		
 		body.set('file',body.get('file').name);
+		body.set('mode',body.get('mode_'+body.get('server')))
+		body.delete('mode_'+body.get('server'))
 		fetch(form.action, {
 		    method: form.method,
 		    body: body
@@ -225,10 +256,12 @@
 			} catch(err) {
 				var patient_name = null
 			}
-			var protocol_name = getTagValue(header, 'ProtocolName');
+			try { 
+				var protocol_name = getTagValue(header, 'ProtocolName');
+				document.getElementById('protocol').value = protocol_name;
+			} catch(err) {
 
-			console.log(protocol_name);
-			// console.log(utf8(header));
+			}
 		})
 	}, false);
 

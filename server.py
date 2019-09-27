@@ -3,30 +3,38 @@ from flask import Flask, render_template, request, abort, jsonify, redirect
 from flask import send_from_directory
 import os
 import tempfile
-from yarraclient import *
+from yarrapyclient.yarraclient import *
 
 app = Flask(__name__)
 app.debug = True
 
 temp_base = tempfile.gettempdir()
 
+servers = [Server('***REMOVED***','***REMOVED***'), 
+            Server('***REMOVED***','***REMOVED***')]
+
 # landing page
 @app.route("/")
 def resumable_example():
-    server = Server('***REMOVED***','***REMOVED***')
-    return render_template("test.html", server=server)
+    return render_template("test.html", servers=servers)
 
 @app.route('/resumable.js')
 def js():
     return send_from_directory('.',
-                               'resumable.js')
+                               'files/resumable.js')
 
 @app.route("/submit_task", methods=['POST'])
 def submit_task():
     print(request.form)
-    print(request.args)
-    server = Server('***REMOVED***','***REMOVED***')
-    t = Task(server, request.form.get('mode'), '/tmp/'+request.form.get('file'), 'UnknownProtocol', 999)
+    for s in servers:
+      if s.name == request.form.get('server'):
+        server = s
+    if not server:
+        return abort(400)
+    t = Task(server, request.form.get('mode'), '/tmp/'+request.form.get('file'),
+         request.form.get('protocol'), 
+         request.form.get('accession',None),
+         request.form.get('patient_name'))
     print("submitting")
     t.submit()
     print("done")

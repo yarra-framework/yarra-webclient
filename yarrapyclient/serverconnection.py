@@ -5,11 +5,31 @@ from smb.SMBConnection import SMBConnection
 from smb.smb_structs import OperationFailure
 
 class ServerConnection:
+    server_name = None
+    dead = False
     def __init__(self, server_name):
+        self.server_name = server_name
+
+    def __enter__(self):
+        self.connect()
+        return self
+
+    def __exit__(self,type,value,traceback):
+        self.close();
+
+    def connect(self):        
+        if (self.dead):
+            raise Exception("dead connection raised to life")
+        print("Connecting to",self.server_name)
         user = 'yarra'
         password = '***REMOVED***'
-        self.conn = SMBConnection(user, password, 'yarra-client', server_name)
-        self.conn.connect(server_name)
+        self.conn = SMBConnection(user, password, 'yarra-client', self.server_name)
+        self.conn.connect(self.server_name)
+
+    def close(self):
+        self.dead = True
+        print("Disconnected from",self.server_name)
+        self.conn.close()
 
     def file_exists(self,name):
         try: 
@@ -32,11 +52,13 @@ class ServerConnection:
             raise Exception(f'{task_name} does not appear to be locked')
 
     def store(self, file_name, file_obj, *, force=False):
+        print("Storing file")
         path = Path(file_name)
         if not force and self.file_exists(path.name):
             raise Exception(f'{path.name} exists on server')
 
         self.conn.storeFile('YarraServer',path.name,file_obj)
+        print("Stored file")
 
     def get(self, file_name, file_obj):
         self.conn.retrieveFile('YarraServer',file_name,file_obj)

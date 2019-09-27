@@ -10,7 +10,7 @@ import os
 import shutil
 import io
 
-from serverconnection import ServerConnection
+from .serverconnection import ServerConnection
 
 class Priority(Enum):
      Normal = 1
@@ -32,17 +32,20 @@ class Server:
     modes: List[Mode]
     path: str
 
+    def connection(self):
+        return ServerConnection(self.path)
 
     def __init__(self, name:str, path:str):
         self.name = name
         self.path = path
-        self.connection = ServerConnection(path)
-        config = configparser.ConfigParser()
-
-        config_file = io.BytesIO()
-        self.connection.get('YarraModes.cfg',config_file)
-        config_string = config_file.read().decode('UTF-8')
         
+        config = configparser.ConfigParser()
+        config_file = io.BytesIO()
+
+        with self.connection() as c:
+            c.get('YarraModes.cfg',config_file)
+
+        config_string = config_file.read().decode('UTF-8')
         config.read_string(config_string)#;(Path(mnt_path,'YarraModes.cfg'))
 
         mode_info = ( (mode_entry[1], config[mode_entry[1]])  for mode_entry in config.items('Modes') )
@@ -122,7 +125,7 @@ class Task():
     task_data: TaskData
     server: Server
 
-    def __init__(self, server, mode_name, scan_file_path, protocol, acc=None, *, email_notifications:list = None, param_value:int=None):
+    def __init__(self, server, mode_name, scan_file_path, protocol, patient_name, acc=None, *, email_notifications:list = None, param_value:int=None):
         self.server = server
         if (mode_name not in server.modes.keys()):
             raise Exception(f'Recon mode "{mode_name}" not available on server {server.name}')
@@ -149,20 +152,19 @@ class Task():
             param_value = param_value,
             required_server_type = None,
             acc_number = acc,
-            patient_name = 'Joe Bloggs',
+            patient_name = patient_name,
         )
         # print(self.task_data)
 
     def submit(self):
-        conn = self.server.connection
-
-        conn.lock_task(self.task_name)
-        try:
-            with open(self.scan_file,'rb') as scan_f:
-                conn.store(f'{self.task_name}.task',io.BytesIO(self.task_data.to_config().encode()))
-                conn.store(f'{self.task_name}.dat',scan_f)
-        finally:
-            conn.unlock_task(self.task_name)
+        with self.server.connection() as conn:
+            conn.lock_task(self.task_name)
+            try:
+                with open(self.scan_file,'rb') as scan_f:
+                    conn.store(f'{self.task_name}.task',io.BytesIO(self.task_data.to_config().encode()))
+                    conn.store(f'{self.task_name}.dat',scan_f)
+            finally:
+                conn.unlock_task(self.task_name)
 
         # with SoftFileLock(Path(self.server.path,self.task_name+'.lock'), timeout=1):
         #     task_loc = Path(self.server.path,self.task_name+'.task')
