@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired,Length
 from wtforms import StringField,HiddenField,SelectField,TextAreaField,PasswordField
-from wtforms_sqlalchemy.fields import QuerySelectField, QuerySelectMultipleField
+from lib.wtforms_sqlalchemy.fields import QuerySelectField, QuerySelectMultipleField
 from wtforms import widgets
 from models import User, Role, InstructionTemplate, StatusEvent,Asset
 from wtforms_alchemy import model_form_factory, ModelFormField
