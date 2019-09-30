@@ -12,9 +12,16 @@ from flask.views import View
 import flask_login
 from flask_login import LoginManager
 from passlib.apps import custom_app_context as pwd_context
-from extensions import db
+from extensions import db, login_manager
 
 from yarrapyclient.yarraclient import *
+
+from models import User, Role, InstructionTemplate, StatusEvent,Asset, AssetStatus
+from forms import NewForm, LoginForm, AssetReportForm, InstructionTemplateForm, AssetEditForm
+from functools import wraps
+
+
+admin_views = []
 
 
 def create_app():
@@ -22,26 +29,39 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.sqlite'
     app.secret_key = "asdfasdfere"
     db.init_app(app) 
+    login_manager.init_app(app)
     return app
 
 app = create_app()
+import login_flow
+
+def login_required(role=None):
+    def decorator(fn):
+        @wraps(fn)
+        def decorated_view(*args, **kwargs):
+            if not flask_login.current_user.is_authenticated:
+                return login_manager.unauthorized()
+
+            if ( role is not None and role not in flask_login.current_user.roles):
+                flash("insufficient permissions",'warning')
+                if (request.path != "/"):
+                    return redirect("/") 
+                else: 
+                    return redirect(url_for("login")) 
+
+            return fn(*args, **kwargs)
+        return decorated_view
+    return decorator
+
 
 
 temp_base = '/tmp'
 
 @app.route('/files/resumable.js')
 def js():
-    print("resumable")
     return send_from_directory('.',
                                'files/resumable.js')
-login_manager = LoginManager()
-login_manager.init_app(app)
 
-from models import User, Role, InstructionTemplate, StatusEvent,Asset, AssetStatus
-from forms import NewForm, LoginForm, AssetReportForm, InstructionTemplateForm, AssetEditForm
-import login_flow
-
-admin_views = []
 
 
 @app.template_filter('dt')
@@ -51,7 +71,6 @@ def _jinja2_filter_datetime(date, fmt=None):
     else:
         return date.strftime('%m/%d/%Y %H:%M:%S')
 
-
 @app.route("/reset")
 def reset():
     db.drop_all()
@@ -60,9 +79,9 @@ def reset():
 #    test_asset = Asset(name="Skyra", building="CBI",type="MR",shortcode="0YFWLY3",instruction_template = test_instructions)
 #    test_asset = Asset(name="Aera", building="CBI",type="MR",shortcode="FTC3W34",instruction_template = test_instructions)
 #    db.session.add(test_asset)
-    admin_role = Role(name="Admin")
+    admin_role = Role(name="admin")
     db.session.add(admin_role)
-    submit_role = Role(name="Submitter")
+    submit_role = Role(name="submitter")
     db.session.add(submit_role)
     test_user = User(username="roy", password=pwd_context.hash("roy"),roles=[admin_role,submit_role])
     db.session.add(test_user)
@@ -70,7 +89,7 @@ def reset():
     return "OK"
 
 @app.route('/admin/')
-@flask_login.login_required
+@login_required()
 def admin_page():
     return redirect(url_for("user_edit"))
 
@@ -78,12 +97,12 @@ servers = [Server('***REMOVED***','***REMOVED***'),
             Server('***REMOVED***','***REMOVED***')]
 
 @app.route('/')
-@flask_login.login_required
+@login_required('submitter')
 def index():
-    print(servers[0].modes)
     return render_template('submit.html', servers=servers)
 
 @app.route("/submit_task", methods=['POST'])
+@login_required('submitter')
 def submit_task():
     print(request.form)
     for s in servers:
@@ -99,9 +118,11 @@ def submit_task():
     t.submit()
     print("done")
     return redirect("/")
+
 # resumable.js uses a GET request to check if it uploaded the file already.
 # NOTE: your validation here needs to match whatever you do in the POST (otherwise it will NEVER find the files)
 @app.route("/resumable_upload", methods=['GET'])
+@login_required('submitter')
 def resumable():
     resumableIdentifier = request.args.get('resumableIdentifier', type=str)
     resumableFilename = request.args.get('resumableFilename', type=str)
@@ -128,6 +149,7 @@ def resumable():
 
 # if it didn't already upload, resumable.js sends the file here
 @app.route("/resumable_upload", methods=['POST'])
+@login_required('submitter')
 def resumable_post():
     resumableTotalChunks = request.form.get('resumableTotalChunks', type=int)
     resumableChunkNumber = request.form.get('resumableChunkNumber', default=1, type=int)
@@ -214,7 +236,8 @@ class ObjectView(View):
 def register_view( model, path, view_name):
 	admin_views.append(dict(view_name=view_name,name=model.__name__))
 	view = ObjectView.as_view(view_name, model,view_name)
-	view = flask_login.login_required(view)
+	view = login_required('admin')(view)
+
 	app.add_url_rule('/admin/{}/'.format(path), view_func=view, defaults={'method':'edit','identifier': None})
 	app.add_url_rule('/admin/{}/<method>/'.format(path),view_func=view,defaults={'identifier': None}, methods=['GET','POST'])
 	app.add_url_rule('/admin/{}/<method>/<identifier>'.format(path),view_func=view,methods=['GET','POST'])

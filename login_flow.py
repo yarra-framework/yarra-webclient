@@ -3,6 +3,7 @@ from forms import LoginForm
 from app import login_manager
 from app import app
 from app import pwd_context
+
 import flask_login
 from flask import flash, redirect, url_for, request, render_template
 class LoginUser(flask_login.UserMixin):
@@ -14,6 +15,7 @@ def user_loader(username):
     if not user:
         return
     login_user = LoginUser()
+    login_user.roles = [x.name for x in user.roles]
     login_user.id = user.username
     return login_user
 
@@ -25,6 +27,7 @@ def request_loader(request):
     if not user:
         return
     login_user = LoginUser()
+    login_user.roles = [x.name for x in user.roles]
     login_user.id = user.username
     user.is_authenticated = pwd_context.verify(request.form['password'], user.password)
     return user
@@ -53,6 +56,6 @@ def logout():
     return redirect(url_for('login'))
 
 @login_manager.unauthorized_handler
-def unauthorized():
+def unauthorized(**kwargs):
     flash("Login required",'warning')
     return redirect(url_for('login',next=request.path))
