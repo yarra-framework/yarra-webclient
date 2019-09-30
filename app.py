@@ -12,14 +12,20 @@ from flask.views import View
 import flask_login
 from flask_login import LoginManager
 from passlib.apps import custom_app_context as pwd_context
-
+from extensions import db
 
 from yarrapyclient.yarraclient import *
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.sqlite'
-db = SQLAlchemy(app)
-app.secret_key = "asdfasdfere"
+
+def create_app():
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.sqlite'
+    app.secret_key = "asdfasdfere"
+    db.init_app(app) 
+    return app
+
+app = create_app()
+
 
 temp_base = '/tmp'
 
@@ -213,8 +219,6 @@ def register_view( model, path, view_name):
 	app.add_url_rule('/admin/{}/<method>/'.format(path),view_func=view,defaults={'identifier': None}, methods=['GET','POST'])
 	app.add_url_rule('/admin/{}/<method>/<identifier>'.format(path),view_func=view,methods=['GET','POST'])
 
-#register_view(Asset,'asset','asset_edit')
-#register_view(InstructionTemplate,'template','template_edit')
 register_view(User,'user','user_edit')
 
 if __name__ == "__main__":

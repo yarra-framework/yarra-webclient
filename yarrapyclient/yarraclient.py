@@ -9,8 +9,6 @@ from pathlib import Path
 import os
 import shutil
 import io
-from pydataclasses import DataClass
-
 from .serverconnection import ServerConnection
 
 class Priority(Enum):

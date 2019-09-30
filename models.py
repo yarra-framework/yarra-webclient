@@ -2,7 +2,7 @@ from wtforms import StringField,HiddenField,SelectField,TextAreaField,PasswordFi
 from jinja2 import Template
 from datetime import datetime
 import enum
-from app import db
+from extensions import db
 
 
 class AssetStatus(enum.Enum):
