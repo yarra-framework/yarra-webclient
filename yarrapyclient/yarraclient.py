@@ -67,7 +67,6 @@ class Server():
                 sort_index =         info.getint('sortindex')
             ) for name, info in mode_info
         }
-        print(self.modes)
 
 class TaskData():
     recon_mode = None # type: str

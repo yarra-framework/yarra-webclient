@@ -12,7 +12,7 @@ class AssetStatus(enum.Enum):
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String, nullable=False)
+    username = db.Column(db.String, nullable=False, unique=True)
     password = db.Column(db.String, nullable=False)
     roles = db.relationship('Role', secondary='user_roles')
 
@@ -22,6 +22,10 @@ class User(db.Model):
 
     def get_id(self):
         return self.id
+
+    def __str__(self):
+        return "<User {}>".format(self.username)
+    
 
 # Define the Role data-model
 class Role(db.Model):

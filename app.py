@@ -19,7 +19,9 @@ from yarrapyclient.yarraclient import *
 from models import User, Role, InstructionTemplate, StatusEvent,Asset, AssetStatus
 from forms import NewForm, LoginForm, AssetReportForm, InstructionTemplateForm, AssetEditForm
 from functools import wraps
-
+import click
+from flask.cli import AppGroup
+from getpass import getpass
 
 admin_views = []
 
@@ -71,14 +73,41 @@ def _jinja2_filter_datetime(date, fmt=None):
     else:
         return date.strftime('%m/%d/%Y %H:%M:%S')
 
-@app.route("/reset")
+
+user_cli = AppGroup('user')
+
+@user_cli.command('create')
+@click.argument('name')
+def create_user(name):
+    roles = [db.session.query(Role).filter_by(name=r).scalar() for r in ['admin','submitter']]
+    pw = getpass()
+    new_user =  User(username=name, password=pwd_context.hash(pw),roles=roles)
+    db.session.add(new_user)
+    db.session.commit()
+    print("Done")
+
+@user_cli.command('list')
+def list_users():
+    users = db.session.query(User).all()
+    for u in users:
+        print(u, ", ".join([role.name for role in u.roles]))
+
+@user_cli.command('reset')
+@click.argument('name')
+def reset_pw(name):
+    user = db.session.query(User).filter_by(username=name).first()
+    user.password = pwd_context.hash(getpass())
+    db.session.commit()
+
+
+app.cli.add_command(user_cli)
+
+@app.cli.command("reset")
 def reset():
+    if input("Really reset the entire database? (Y/N) ") != "Y":
+        return
     db.drop_all()
     db.create_all()
-#    test_instructions = InstructionTemplate(name="default",text="""Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam fringilla est in porttitor varius. Vestibulum ligula quam, viverra at tincidunt eget, ornare eget nisl. Praesent ac mollis diam. Etiam neque turpis, dictum sit amet consectetur quis, sollicitudin nec lacus. Nullam in tortor commodo, facilisis felis sed, molestie tortor. Cras lacinia, lectus ac ultrices consequat, diam orci auctor erat, in vestibulum risus odio vel urna. Donec elit lacus, rutrum sed bibendum consequat, tincidunt sed dolor. Cras accumsan iaculis arcu, vitae congue ligula ultricies a. Proin placerat massa commodo commodo dignissim. Phasellus id tellus varius, finibus erat eget, consectetur tortor. Aliquam pretium justo ut tincidunt porttitor. Quisque non risus posuere, facilisis nibh id, bibendum tellus. Suspendisse potenti. Fusce a dolor id lectus malesuada convallis. Nullam euismod, quam in sodales faucibus, massa augue facilisis quam, eget mollis neque urna et neque. Nulla facilisi. Nam semper tempus dolor eu cursus. Integer nec tristique enim.""")
-#    test_asset = Asset(name="Skyra", building="CBI",type="MR",shortcode="0YFWLY3",instruction_template = test_instructions)
-#    test_asset = Asset(name="Aera", building="CBI",type="MR",shortcode="FTC3W34",instruction_template = test_instructions)
-#    db.session.add(test_asset)
     admin_role = Role(name="admin")
     db.session.add(admin_role)
     submit_role = Role(name="submitter")
@@ -86,7 +115,7 @@ def reset():
     test_user = User(username="roy", password=pwd_context.hash("roy"),roles=[admin_role,submit_role])
     db.session.add(test_user)
     db.session.commit()
-    return "OK"
+    print("OK")
 
 @app.route('/admin/')
 @login_required()
