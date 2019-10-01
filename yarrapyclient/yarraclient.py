@@ -40,7 +40,7 @@ class Server():
     def connection(self):
         return ServerConnection(self.path)
 
-    def __init__(self, name,path):
+    def __init__(self, name,path, lazy=False):
         #super(Server, self).__init__()
         self.name = name
         self.path = path
@@ -48,25 +48,26 @@ class Server():
         config = configparser.ConfigParser()
         config_file = io.BytesIO()
 
-        with self.connection() as c:
-            c.get('YarraModes.cfg',config_file)
+        if not lazy:
+            with self.connection() as c:
+                c.get('YarraModes.cfg',config_file)
 
-        config_string = config_file.read().decode('UTF-8')
-        config.read_string(config_string)#;(Path(mnt_path,'YarraModes.cfg'))
+            config_string = config_file.read().decode('UTF-8')
+            config.read_string(config_string)#;(Path(mnt_path,'YarraModes.cfg'))
 
-        mode_info = ( (mode_entry[1], config[mode_entry[1]])  for mode_entry in config.items('Modes') )
+            mode_info = ( (mode_entry[1], config[mode_entry[1]])  for mode_entry in config.items('Modes') )
 
-        self.modes = {
-             name: Mode(
-                tag =                info.get('tag'),
-                name =               info.get('name'),
-                confirmation_mail =  info.get('confirmationmail'),
-                requires_adj_scans = info.getboolean('requiresadjscans'),
-                requires_acc =       info.getboolean('requiresacc'),
-                required_server_type = info.get('requiredservertype'),
-                sort_index =         info.getint('sortindex')
-            ) for name, info in mode_info
-        }
+            self.modes = {
+                 name: Mode(
+                    tag =                info.get('tag'),
+                    name =               info.get('name'),
+                    confirmation_mail =  info.get('confirmationmail'),
+                    requires_adj_scans = info.getboolean('requiresadjscans'),
+                    requires_acc =       info.getboolean('requiresacc'),
+                    required_server_type = info.get('requiredservertype'),
+                    sort_index =         info.getint('sortindex')
+                ) for name, info in mode_info
+            }
 
 class TaskData():
     recon_mode = None # type: str
@@ -130,36 +131,39 @@ class TaskData():
         io_file.seek(0)
         return io_file.getvalue()
 
+    def __repr__(self):
+        return self.__dict__.__repr__()
 class Task():
     task_name = None # type: str 
     scan_file = None # type: Path
     task_data = None # type: TaskData
     server = None # type: Server
 
-    def __init__(self, server, mode_name, scan_file_path, protocol, patient_name, acc=None, *, email_notifications:list = None, param_value:int=None):
-        self.server = server
-        if (mode_name not in server.modes.keys()):
-            raise Exception('Recon mode "{mode_name}" not available on server {server.name}'.format(**locals()))
+    def __init__(self, mode, scan_file_path, protocol, patient_name, acc=None, *, email_notifications:list = None, param_value:int=None):
+        self.mode = mode
 
-        mode = server.modes[mode_name]
+        # if (mode_name not in server.modes.keys()):
+        #     raise Exception('Recon mode "{mode_name}" not available on server {server.name}'.format(**locals()))
+
+        # mode = server.modes[mode_name]
         if mode.requires_adj_scans:
             raise Exception('Recon mode "{mode_name}" requires adjustments, which aren\'t supported yet'.format(**locals()))
 
-        if not acc and mode.mode_name:
+        if not acc and mode.requires_acc:
             raise Exception('Recon mode "{mode_name}" requires accession.'.format(**locals()))
 
         self.scan_file = Path(scan_file_path)
-        if not os.path.exists(self.scan_file):
+        if not os.path.exists(scan_file_path):
             raise Exception('{self.scan_file} not found'.format(**locals()))
         self.task_name = self.scan_file.stem
 
         self.task_data = TaskData(
             scan_file =      self.scan_file.name,
-            scan_file_size = os.path.getsize(self.scan_file),
-            recon_mode =     mode_name,
+            scan_file_size = os.path.getsize(scan_file_path),
+            recon_mode =     mode.name,
             email_notification = ','.join(email_notifications) if email_notifications else '',
             scan_protocol =  protocol,
-            recon_name =     mode.name,
+            recon_name =     mode.desc,
             param_value =    param_value,
             required_server_type = None,
             acc_number =     acc,
@@ -168,14 +172,15 @@ class Task():
         # print(self.task_data)
 
     def submit(self):
-        with self.server.connection() as conn:
+        with self.mode.server.connection() as conn:
             conn.lock_task(self.task_name)
             try:
-                with open(self.scan_file,'rb') as scan_f:
+                with open(str(self.scan_file),'rb') as scan_f:
                     conn.store('{self.task_name}.task'.format(**locals()), io.BytesIO(self.task_data.to_config().encode()))
                     conn.store('{self.task_name}.dat'.format(**locals()), scan_f)
             finally:
-                conn.unlock_task(self.task_name)
+                pass
+                #conn.unlock_task(self.task_name)
 
         # with SoftFileLock(Path(self.server.path,self.task_name+'.lock'), timeout=1):
         #     task_loc = Path(self.server.path,self.task_name+'.task')

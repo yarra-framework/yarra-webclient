@@ -40,14 +40,14 @@ class ServerConnection:
 
 
     def task_locked(self,task_name):
-        return self.file_exists('{}.lock',format(task_name))
+        return self.file_exists('{}.lock'.format(task_name))
 
     def lock_task(self, task_name):
-        self.conn.storeFile('YarraServer','{}.lock',format(task_name),io.BytesIO(b"lock"))        
+        self.conn.storeFile('YarraServer','{}.lock'.format(task_name),io.BytesIO(b"lock"))        
 
     def unlock_task(self, task_name):
         if self.task_locked(task_name):
-            self.conn.deleteFiles('YarraServer','{}.lock',format(task_name))        
+            self.conn.deleteFiles('YarraServer','{}.lock'.format(task_name))        
         else:
             raise Exception('{} does not appear to be locked'.format(task_name))
 

@@ -16,7 +16,7 @@ from extensions import db, login_manager
 
 from yarrapyclient.yarraclient import *
 
-from models import User, Role, InstructionTemplate, StatusEvent,Asset, AssetStatus
+from models import User, Role, ServerModel, ModeModel
 from forms import NewForm, LoginForm, AssetReportForm, InstructionTemplateForm, AssetEditForm
 from functools import wraps
 import click
@@ -29,6 +29,7 @@ admin_views = []
 def create_app():
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.sqlite'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.secret_key = "asdfasdfere"
     db.init_app(app) 
     login_manager.init_app(app)
@@ -102,11 +103,7 @@ def reset_pw(name):
 
 app.cli.add_command(user_cli)
 
-@app.cli.command("reset")
-def reset():
-    if input("Really reset the entire database? (Y/N) ") != "Y":
-        return
-    db.drop_all()
+def init_db():
     db.create_all()
     admin_role = Role(name="admin")
     db.session.add(admin_role)
@@ -114,7 +111,43 @@ def reset():
     db.session.add(submit_role)
     test_user = User(username="roy", password=pwd_context.hash("roy"),roles=[admin_role,submit_role])
     db.session.add(test_user)
+
+    servers = [ServerModel(name='AGR1',path='xdglpdcdap001.nyumc.org'), 
+                ServerModel(name='YarraAda',path='xdglpdcdap002.nyumc.org')]
+
+    for s in servers:
+        s.update_modes()
+        db.session.add(s)
+
     db.session.commit()
+
+@app.cli.command("submit")
+def submit():
+    server_name = 'YarraAda'
+    mode_name = 'MatlabSample'
+    mode = db.session.query(ModeModel).join(ModeModel.server)\
+                .filter(ModeModel.name==mode_name)\
+                .filter(ServerModel.name==server_name).scalar()
+    if mode is None:
+        print("Invalid mode / server combination")
+        return
+    t = Task(mode, 'test.dat', 'theProtocol', 'John Doe', None)
+    t.submit()
+    print(t.task_data)
+    print("OK")
+
+    
+@app.cli.command("init")
+def init():
+    init_db()
+    print("OK")
+
+@app.cli.command("reset")
+def reset():
+    if input("Really reset the entire database? (Y/N) ") != "Y":
+        return
+    db.drop_all()
+    init_db()
     print("OK")
 
 @app.route('/admin/')
@@ -122,24 +155,21 @@ def reset():
 def admin_page():
     return redirect(url_for("user_edit"))
 
-servers = [Server('AGR1','xdglpdcdap001.nyumc.org'), 
-            Server('YarraAda','xdglpdcdap002.nyumc.org')]
-
 @app.route('/')
 @login_required('submitter')
 def index():
-    return render_template('submit.html', servers=servers)
+    return render_template('submit.html', servers=db.session.query(ServerModel).all())
 
 @app.route("/submit_task", methods=['POST'])
 @login_required('submitter')
 def submit_task():
     print(request.form)
-    for s in servers:
-      if s.name == request.form.get('server'):
-        server = s
-    if not server:
+    mode = db.session.query(ModeModel).join(ModeModel.server)\
+                .filter(ModeModel.name==request.form.get('mode'))\
+                .filter(ServerModel.name==request.form.get('server')).scalar()
+    if not mode:
         return abort(400)
-    t = Task(server, request.form.get('mode'), '/tmp/'+request.form.get('file'),
+    t = Task(mode, '/tmp/'+request.form.get('file'),
          request.form.get('protocol'), 
          request.form.get('accession',None),
          request.form.get('patient_name'))
@@ -272,6 +302,7 @@ def register_view( model, path, view_name):
 	app.add_url_rule('/admin/{}/<method>/<identifier>'.format(path),view_func=view,methods=['GET','POST'])
 
 register_view(User,'user','user_edit')
+register_view(ServerModel,'server','server_edit')
 
 if __name__ == "__main__":
     app.run()

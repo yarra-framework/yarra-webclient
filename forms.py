@@ -3,7 +3,7 @@ from wtforms.validators import DataRequired,Length
 from wtforms import StringField,HiddenField,SelectField,TextAreaField,PasswordField
 from lib.wtforms_sqlalchemy.fields import QuerySelectField, QuerySelectMultipleField
 from wtforms import widgets
-from models import User, Role, InstructionTemplate, StatusEvent,Asset
+from models import User, Role, InstructionTemplate, StatusEvent,Asset, ServerModel
 from wtforms_alchemy import model_form_factory, ModelFormField
 
 BaseModelForm = model_form_factory(FlaskForm)
@@ -56,3 +56,14 @@ class UserForm(ModelForm):
         option_widget=widgets.CheckboxInput())
 
 User.form = UserForm
+
+class ServerForm(ModelForm):
+    def __init__(self,*args,**kwargs):
+        super(ServerForm, self).__init__(*args,**kwargs)
+
+    class Meta:
+        model = ServerModel
+    
+    path = StringField('Path', validators=[DataRequired()])
+
+ServerModel.form = ServerForm

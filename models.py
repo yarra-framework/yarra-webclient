@@ -3,8 +3,9 @@ from jinja2 import Template
 from datetime import datetime
 import enum
 from extensions import db
-
-
+from configparser import ConfigParser
+import io
+from yarrapyclient.serverconnection import ServerConnection
 class AssetStatus(enum.Enum):
     up = 0
     down = 1
@@ -25,7 +26,61 @@ class User(db.Model):
 
     def __str__(self):
         return "<User {}>".format(self.username)
-    
+
+class ServerModel(db.Model):
+    id =     db.Column(db.Integer, primary_key=True)
+    path =   db.Column(db.String,nullable=False,default="", info={'label':'Path'})
+    name =   db.Column(db.String,nullable=False,default="",unique=True, info={'label':'Name'})
+    modes =  db.relationship('ModeModel', backref='server', lazy=True)
+
+    def get_id(self):
+        return self.name
+
+    @classmethod
+    def get_id_field(self):
+        return 'name'
+
+    def connection(self):
+        return ServerConnection(self.path)
+        
+    def update_modes(self):
+        config = ConfigParser()
+        config_file = io.BytesIO()
+
+        with ServerConnection(self.path) as c:
+            c.get('YarraModes.cfg',config_file)
+        config.read_string(config_file.read().decode('UTF-8'))
+        mode_info = ( (mode_entry[1], config[mode_entry[1]])  for mode_entry in config.items('Modes') )
+
+        self.modes = [ModeModel(
+                tag =                info.get('tag'),
+                name =               name,
+                desc =               info.get('name'),
+                confirmation_mail =  info.get('confirmationmail'),
+                requires_adj_scans = info.getboolean('requiresadjscans'),
+                requires_acc =       info.getboolean('requiresacc'),
+                required_server_type = info.get('requiredservertype'),
+                sort_index =         info.getint('sortindex')
+            ) for name, info in mode_info
+        ]
+
+
+class ModeModel(db.Model):
+    id =            db.Column(db.Integer, primary_key=True)
+
+    name =          db.Column(db.String,nullable=False, info={'label':'asd'})
+    desc =          db.Column(db.String,nullable=False, info={'label':'Name'})
+    sort_index =    db.Column(db.Integer, nullable=False, default=0) 
+    requires_adj_scans = db.Column(db.Boolean, nullable=False, default=False) 
+    requires_acc =  db.Column(db.Boolean, nullable=False, default=False) 
+    confirmation_mail = db.Column(db.String,nullable=False,default="",info=dict(label='notification'))
+    tag =           db.Column(db.String,nullable=True) 
+    required_server_type = db.Column(db.String,nullable=True) 
+    server_id =     db.Column(db.Integer, db.ForeignKey('server_model.id'))
+
+    def __repr__(self):
+        return "<"+", ".join(map(str,[self.name,self.sort_index]))+">"
+
 
 # Define the Role data-model
 class Role(db.Model):
