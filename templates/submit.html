@@ -92,7 +92,7 @@
 	    {% for server in servers %}
 	    <select name="mode_{{server.name}}"  class="form-control d-none" id="mode_{{server.name}}" required>
 	    	{% for mode in server.modes %}
-	    	<option value="{{mode}}">{{ server.modes[mode].name }}</option>
+	    	<option value="{{mode.name}}">{{ mode.name }}</option>
 	    	{% endfor %}
 	    </select>
 	    {% endfor %}
