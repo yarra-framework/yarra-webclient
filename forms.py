@@ -1,17 +1,18 @@
 from flask_wtf import FlaskForm
-from wtforms.validators import DataRequired,Length
+from wtforms.validators import DataRequired,Length,EqualTo
 from wtforms import StringField,HiddenField,SelectField,TextAreaField,PasswordField
 from lib.wtforms_sqlalchemy.fields import QuerySelectField, QuerySelectMultipleField
 from wtforms import widgets
-from models import User, Role, InstructionTemplate, StatusEvent,Asset, ServerModel
+from models import User, Role, InstructionTemplate, StatusEvent,Asset, YarraServer
 from wtforms_alchemy import model_form_factory, ModelFormField
 
 BaseModelForm = model_form_factory(FlaskForm)
 
 class ModelForm(BaseModelForm):
-    @classmethod
-    def get_session(self):
-        return db.session
+    pass
+    # @classmethod
+    # def get_session(self):
+    #     return db.session
 
 class NewForm(ModelForm):
     pass
@@ -19,6 +20,12 @@ class NewForm(ModelForm):
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
+
+class RegisterForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired(),Length(min=6),EqualTo('password_confirm',message='Passwords must match')])
+    password_confirm = PasswordField('Password (confirm)', validators=[DataRequired(), Length(min=6)])
+
 
 class AssetReportForm(FlaskForm):
     details =    StringField('Details', validators=[DataRequired(),Length(min=20)])
@@ -60,10 +67,14 @@ User.form = UserForm
 class ServerForm(ModelForm):
     def __init__(self,*args,**kwargs):
         super(ServerForm, self).__init__(*args,**kwargs)
+        self.roles.query = Role.query
 
     class Meta:
-        model = ServerModel
+        model = YarraServer
     
     path = StringField('Path', validators=[DataRequired()])
+    roles = QuerySelectMultipleField('Roles',get_label=lambda x:x.name,
+        widget=widgets.ListWidget(prefix_label=False),
+        option_widget=widgets.CheckboxInput())
 
-ServerModel.form = ServerForm
+YarraServer.form = ServerForm

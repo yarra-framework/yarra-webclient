@@ -43,6 +43,8 @@ class ServerConnection:
         return self.file_exists('{}.lock'.format(task_name))
 
     def lock_task(self, task_name):
+        if (self.task_locked('{}.lock'.format(task_name))):
+            raise Exception("task already locked")
         self.conn.storeFile('YarraServer','{}.lock'.format(task_name),io.BytesIO(b"lock"))        
 
     def unlock_task(self, task_name):

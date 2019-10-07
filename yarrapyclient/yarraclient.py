@@ -17,57 +17,57 @@ class Priority(Enum):
      High   = 3
 
 
-class Mode():
-    name = None  # type: str
-    sort_index = 0  # type: int
-    requires_adj_scans = None # type: bool = False
-    requires_acc = None  # type: bool = False
-    confirmation_mail = None  # type: str = None
-    tag = None  # type: str = None
-    required_server_type = None  # type: str = None
+# class Mode():
+#     name = None  # type: str
+#     sort_index = 0  # type: int
+#     requires_adj_scans = None # type: bool = False
+#     requires_acc = None  # type: bool = False
+#     confirmation_mail = None  # type: str = None
+#     tag = None  # type: str = None
+#     required_server_type = None  # type: str = None
 
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
+#     def __init__(self, **kwargs):
+#         self.__dict__.update(kwargs)
 
-    def __repr__(self):
-        return self.name +","+ str(self.sort_index)
+#     def __repr__(self):
+#         return self.name +","+ str(self.sort_index)
 
-class Server():
-    name = None # type: str
-    modes = None # type: List[Mode]
-    path = None # type: str
+# class Server():
+#     name = None # type: str
+#     modes = None # type: List[Mode]
+#     path = None # type: str
 
-    def connection(self):
-        return ServerConnection(self.path)
+#     def connection(self):
+#         return ServerConnection(self.path)
 
-    def __init__(self, name,path, lazy=False):
-        #super(Server, self).__init__()
-        self.name = name
-        self.path = path
+#     def __init__(self, name,path, lazy=False):
+#         #super(Server, self).__init__()
+#         self.name = name
+#         self.path = path
         
-        config = configparser.ConfigParser()
-        config_file = io.BytesIO()
+#         config = configparser.ConfigParser()
+#         config_file = io.BytesIO()
 
-        if not lazy:
-            with self.connection() as c:
-                c.get('YarraModes.cfg',config_file)
+#         if not lazy:
+#             with self.connection() as c:
+#                 c.get('YarraModes.cfg',config_file)
 
-            config_string = config_file.read().decode('UTF-8')
-            config.read_string(config_string)#;(Path(mnt_path,'YarraModes.cfg'))
+#             config_string = config_file.read().decode('UTF-8')
+#             config.read_string(config_string)#;(Path(mnt_path,'YarraModes.cfg'))
 
-            mode_info = ( (mode_entry[1], config[mode_entry[1]])  for mode_entry in config.items('Modes') )
+#             mode_info = ( (mode_entry[1], config[mode_entry[1]])  for mode_entry in config.items('Modes') )
 
-            self.modes = {
-                 name: Mode(
-                    tag =                info.get('tag'),
-                    name =               info.get('name'),
-                    confirmation_mail =  info.get('confirmationmail'),
-                    requires_adj_scans = info.getboolean('requiresadjscans'),
-                    requires_acc =       info.getboolean('requiresacc'),
-                    required_server_type = info.get('requiredservertype'),
-                    sort_index =         info.getint('sortindex')
-                ) for name, info in mode_info
-            }
+#             self.modes = {
+#                  name: Mode(
+#                     tag =                info.get('tag'),
+#                     name =               info.get('name'),
+#                     confirmation_mail =  info.get('confirmationmail'),
+#                     requires_adj_scans = info.getboolean('requiresadjscans'),
+#                     requires_acc =       info.getboolean('requiresacc'),
+#                     required_server_type = info.get('requiredservertype'),
+#                     sort_index =         info.getint('sortindex')
+#                 ) for name, info in mode_info
+#             }
 
 class TaskData():
     recon_mode = None # type: str
@@ -133,6 +133,7 @@ class TaskData():
 
     def __repr__(self):
         return self.__dict__.__repr__()
+
 class Task():
     task_name = None # type: str 
     scan_file = None # type: Path
@@ -147,14 +148,14 @@ class Task():
 
         # mode = server.modes[mode_name]
         if mode.requires_adj_scans:
-            raise Exception('Recon mode "{mode_name}" requires adjustments, which aren\'t supported yet'.format(**locals()))
+            raise Exception('Recon mode "{}" requires adjustments, which aren\'t supported yet'.format(mode_name))
 
         if not acc and mode.requires_acc:
-            raise Exception('Recon mode "{mode_name}" requires accession.'.format(**locals()))
+            raise Exception('Recon mode "{}" requires accession.'.format(mode_name))
 
         self.scan_file = Path(scan_file_path)
         if not os.path.exists(scan_file_path):
-            raise Exception('{self.scan_file} not found'.format(**locals()))
+            raise Exception('{} not found'.format(self.scan_file))
         self.task_name = self.scan_file.stem
 
         self.task_data = TaskData(
@@ -173,14 +174,16 @@ class Task():
 
     def submit(self):
         with self.mode.server.connection() as conn:
-            conn.lock_task(self.task_name)
+            try:
+                conn.lock_task(self.task_name)
+            except:
+                raise Exception("task appears to be locked")
             try:
                 with open(str(self.scan_file),'rb') as scan_f:
-                    conn.store('{self.task_name}.task'.format(**locals()), io.BytesIO(self.task_data.to_config().encode()))
-                    conn.store('{self.task_name}.dat'.format(**locals()), scan_f)
+                    conn.store('{}.task'.format(self.task_name), io.BytesIO(self.task_data.to_config().encode()))
+                    conn.store('{}.dat'.format(self.task_name), scan_f)
             finally:
-                pass
-                #conn.unlock_task(self.task_name)
+                conn.unlock_task(self.task_name)
 
         # with SoftFileLock(Path(self.server.path,self.task_name+'.lock'), timeout=1):
         #     task_loc = Path(self.server.path,self.task_name+'.task')
