@@ -24,17 +24,21 @@ class User(db.Model):
     def get_id(self):
         return self.id
 
-    def __str__(self):
+    def __repr__(self):
         return "<User {}>".format(self.username)
 
-class ServerModel(db.Model):
-    id =     db.Column(db.Integer, primary_key=True)
-    path =   db.Column(db.String,nullable=False,default="", info={'label':'Path'})
-    name =   db.Column(db.String,nullable=False,default="",unique=True, info={'label':'Name'})
-    modes =  db.relationship('ModeModel', backref='server', lazy=True)
+class YarraServer(db.Model):
+    id =    db.Column(db.Integer, primary_key=True)
+    path =  db.Column(db.String, nullable=False, default="", info={'label':'Path'})
+    name =  db.Column(db.String, nullable=False, default="", info={'label':'Name'}, unique=True)
+    modes = db.relationship('ModeModel', backref='server', lazy=True)
+    roles = db.relationship('Role', secondary='server_roles')
 
     def get_id(self):
         return self.name
+
+    def __repr__(self):
+        return "<Server {} ({}) {{{}}}>".format(self.name,self.path,",".join(map(str,self.roles)))
 
     @classmethod
     def get_id_field(self):
@@ -42,7 +46,7 @@ class ServerModel(db.Model):
 
     def connection(self):
         return ServerConnection(self.path)
-        
+
     def update_modes(self):
         config = ConfigParser()
         config_file = io.BytesIO()
@@ -68,25 +72,36 @@ class ServerModel(db.Model):
 class ModeModel(db.Model):
     id =            db.Column(db.Integer, primary_key=True)
 
-    name =          db.Column(db.String,nullable=False, info={'label':'asd'})
-    desc =          db.Column(db.String,nullable=False, info={'label':'Name'})
+    name =          db.Column(db.String,  nullable=False, info={'label':'asd'})
+    desc =          db.Column(db.String,  nullable=False, info={'label':'Name'})
     sort_index =    db.Column(db.Integer, nullable=False, default=0) 
     requires_adj_scans = db.Column(db.Boolean, nullable=False, default=False) 
     requires_acc =  db.Column(db.Boolean, nullable=False, default=False) 
     confirmation_mail = db.Column(db.String,nullable=False,default="",info=dict(label='notification'))
-    tag =           db.Column(db.String,nullable=True) 
+    tag =           db.Column(db.String,  nullable=True) 
     required_server_type = db.Column(db.String,nullable=True) 
-    server_id =     db.Column(db.Integer, db.ForeignKey('server_model.id'))
+    server_id =     db.Column(db.Integer, db.ForeignKey('yarra_server.id'))
 
     def __repr__(self):
-        return "<"+", ".join(map(str,[self.name,self.sort_index]))+">"
+        return "< "+", ".join(map(str,[self.name,self.sort_index]))+" >"
+
+# Define the UserRoles association table
+class ServerRoles(db.Model):
+    __tablename__ = 'server_roles'
+    id = db.Column(db.Integer(), primary_key=True)
+    server_id = db.Column(db.Integer(), db.ForeignKey('yarra_server.id', ondelete='CASCADE'))
+    role_id =   db.Column(db.Integer(), db.ForeignKey('roles.id', ondelete='CASCADE'))
 
 
 # Define the Role data-model
 class Role(db.Model):
     __tablename__ = 'roles'
-    id = db.Column(db.Integer(), primary_key=True)
+    id =   db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(50), unique=True)
+
+    def __repr__(self):
+        return "<Role {}>".format(self.name)
+
 
 # Define the UserRoles association table
 class UserRoles(db.Model):
@@ -97,9 +112,9 @@ class UserRoles(db.Model):
 
 class InstructionTemplate(db.Model):
     id =      db.Column(db.Integer, primary_key=True)
-    name =      db.Column(db.String,nullable=False,default="",unique=True, info={'label':'Name'})
-    text =      db.Column(db.String,nullable=False,default="",info={'label':'Text','form_field_class': TextAreaField})
-    assets = db.relationship('Asset', backref='instruction_template', lazy=True)
+    name =    db.Column(db.String,  nullable=False,default="",unique=True, info={'label':'Name'})
+    text =    db.Column(db.String,  nullable=False,default="",info={'label':'Text','form_field_class': TextAreaField})
+    assets =  db.relationship('Asset', backref='instruction_template', lazy=True)
 
     @classmethod
     def get_id_field(self):
