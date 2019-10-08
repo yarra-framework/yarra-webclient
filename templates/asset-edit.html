@@ -22,7 +22,7 @@
         </div>
         <div class="d-flex flex-column list-group">
           {% for an_asset in assets %}
-            <a href="{{ url_for('admin.'+view_func,identifier=an_asset.get_id(),method='edit')}}" class="list-group-item list-group-item-action {{ 'active' if asset.name == an_asset.name }} ">{{an_asset.name or an_asset.username}}</a>
+            <a href="{{ url_for('admin.'+view_func,identifier=an_asset.get_id(),method='edit')}}" class="list-group-item list-group-item-action {{ 'active' if asset.get_id() == an_asset.get_id() }} ">{{an_asset.name or an_asset.username}}</a>
           {% endfor %}
         </div>
         </div>  

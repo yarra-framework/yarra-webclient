@@ -16,13 +16,14 @@ class User(db.Model):
     username = db.Column(db.String, nullable=False, unique=True)
     password = db.Column(db.String, nullable=False)
     roles = db.relationship('Role', secondary='user_roles')
+    email = db.Column(db.String, nullable=False)
 
     @classmethod
     def get_id_field(self):
-        return 'id'
+        return 'username'
 
     def get_id(self):
-        return self.id
+        return self.username
 
     def __repr__(self):
         return "<User {}>".format(self.username)

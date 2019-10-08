@@ -10,6 +10,7 @@ resumable_upload = Blueprint('resumable_upload', __name__,
 
 temp_base = '/tmp'
 
+
 @resumable_upload.route('/files/resumable.js')
 def js():
     return send_from_directory('.',

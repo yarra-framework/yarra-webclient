@@ -22,6 +22,10 @@ def user_loader(username):
     login_user.roles = [x.name for x in user.roles]
     login_user.id = user.username
     login_user.user = user
+    for role in user.roles:
+        if role.name == 'admin':
+            login_user.is_admin = True
+
     return login_user
 
 
@@ -74,9 +78,9 @@ def login():
 def logout():
     flask_login.logout_user()
     flash("Logged out","success")
-    return redirect(url_for('.login'))
+    return redirect(url_for('login.login'))
 
 @login_manager.unauthorized_handler
 def unauthorized(**kwargs):
     flash("Login required",'warning')
-    return redirect(url_for('.login',next=request.path))
+    return redirect(url_for('login.login',next=request.path))

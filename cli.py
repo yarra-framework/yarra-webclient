@@ -1,5 +1,5 @@
 from flask.cli import AppGroup
-from extensions import db
+from extensions import db, pwd_context
 from models import User, Role, YarraServer, ModeModel
 import click
 from getpass import getpass
@@ -46,9 +46,9 @@ def init_db():
     db.session.add(admin_role)
     submit_role = Role(name="submitter")
     db.session.add(submit_role)
-    test_user = User(username="roy", password=pwd_context.hash("roy"),roles=[admin_role,submit_role])
+    test_user = User(username="roy", email="***REMOVED***", password=pwd_context.hash("roy"),roles=[admin_role,submit_role])
     db.session.add(test_user)
-    tobias = User(username="tobias", password=pwd_context.hash("tobias"),roles=[admin_role,submit_role])
+    tobias = User(username="tobias", email='***REMOVED***', password=pwd_context.hash("tobias"),roles=[admin_role,submit_role])
     db.session.add(tobias)
 
 
