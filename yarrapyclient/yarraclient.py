@@ -140,9 +140,9 @@ class Task():
     task_data = None # type: TaskData
     server = None # type: Server
 
-    def __init__(self, mode, scan_file_path, protocol, patient_name, priority = Priority.Normal, acc=None, *, email_notifications:list = None, param_value:int=None):
+    def __init__(self, mode, scan_file_path, protocol, patient_name, task_name, acc=None, priority = Priority.Normal, *, email_notifications:list = None, param_value:int=None):
         self.mode = mode
-
+        self.task_name = task_name
         # if (mode_name not in server.modes.keys()):
         #     raise Exception('Recon mode "{mode_name}" not available on server {server.name}'.format(**locals()))
 
@@ -156,8 +156,6 @@ class Task():
         self.scan_file = Path(scan_file_path)
         if not os.path.exists(scan_file_path):
             raise Exception('{} not found'.format(self.scan_file))
-        self.task_name = self.scan_file.stem
-
         self.task_data = TaskData(
             scan_file =      self.scan_file.name,
             scan_file_size = os.path.getsize(scan_file_path),
@@ -179,10 +177,17 @@ class Task():
                 conn.lock_task(self.task_name)
             except:
                 raise Exception("task appears to be locked")
+
+            task_file = '{}.task'.format(self.task_name)
+            if self.task_data.priority == Priority.Night:
+                task_file += '_night'
+            elif self.task_data.priority == Priority.High:
+                task_file += '_prio'
+
             try:
                 with open(str(self.scan_file),'rb') as scan_f:
-                    conn.store('{}.task'.format(self.task_name), io.BytesIO(self.task_data.to_config().encode()))
-                    conn.store('{}.dat'.format(self.task_name), scan_f)
+                    conn.store(task_file, io.BytesIO(self.task_data.to_config().encode()))
+                    conn.store(self.task_data.scan_file, scan_f)
             finally:
                 conn.unlock_task(self.task_name)
 

@@ -54,7 +54,7 @@ class ServerConnection:
             raise Exception('{} does not appear to be locked'.format(task_name))
 
     def store(self, file_name, file_obj, *, force=False):
-        print("Storing file")
+        print("Storing file {}".format(file_name))
         path = Path(file_name)
         if not force and self.file_exists(path.name):
             raise Exception('{} exists on server'.format(path.name))

@@ -2,14 +2,13 @@
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash,send_from_directory
 from flask_sqlalchemy import SQLAlchemy
-#from datetime import datetime
 from datetime import date
 
-
+import click
 import flask_login
 from extensions import db, login_manager, login_required
 
-from yarrapyclient.yarraclient import Task
+from yarrapyclient.yarraclient import Task, Priority
 
 from models import User, Role, YarraServer, ModeModel
 
@@ -19,6 +18,7 @@ import admin
 import login_flow
 
 import cli
+
 def create_app():
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.sqlite'
@@ -44,16 +44,25 @@ def _jinja2_filter_datetime(date, fmt=None):
         return date.strftime('%m/%d/%Y %H:%M:%S')
 
 @app.cli.command("submit")
-def submit():
+@click.argument('task_id')
+@click.argument('priority',default='')
+def submit(task_id,priority):
     server_name = 'YarraAda'
     mode_name = 'MatlabSample'
+    if (priority == 'high'):
+        priority = Priority.High 
+    elif (priority == 'night'):
+        priority = Priority.Night 
+    else:
+        priority = Priority.Normal
+
     mode = db.session.query(ModeModel).join(ModeModel.server)\
                 .filter(ModeModel.name==mode_name)\
                 .filter(YarraServer.name==server_name).scalar()
     if mode is None:
         print("Invalid mode / server combination")
         return
-    t = Task(mode, 'test.dat', 'theProtocol', 'John Doe', None)
+    t = Task(mode, 'test.dat', 'theProtocol', 'John Doe', task_id, None, priority)
     t.submit()
     print(t.task_data)
     print("OK")
@@ -94,10 +103,20 @@ def submit_task(): # todo: prevent submissions to incorrect servers
                 .filter(YarraServer.name==request.form.get('server')).scalar()
     if not mode:
         return abort(400)
+
+    processing = request.form.get('processing').lower()
+    priority = Priority.Normal
+    if processing == 'night':
+        priority = Priority.Night
+    elif processing == 'priority':
+        priority = Priority.High
     t = Task(mode, '/tmp/'+request.form.get('file'),
          request.form.get('protocol'), 
+         request.form.get('patient_name'),
+         request.form.get('taskid'),
          request.form.get('accession',None),
-         request.form.get('patient_name'))
+         priority
+         )
     print("submitting")
     t.submit()
     print("done")
