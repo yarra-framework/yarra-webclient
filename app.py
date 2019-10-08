@@ -58,6 +58,18 @@ def submit():
     print(t.task_data)
     print("OK")
 
+@app.route('/files/submit.js')
+def submit_js():
+    return send_from_directory('.',
+                               'files/submit.js')
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory('.',
+                               'files/favicon.ico')
+
+
 @app.route('/')
 @login_required('submitter')
 def index():

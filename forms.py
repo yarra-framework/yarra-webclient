@@ -1,9 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms.validators import DataRequired,Length,EqualTo
+from wtforms.validators import *
 from wtforms import StringField,HiddenField,SelectField,TextAreaField,PasswordField
 from lib.wtforms_sqlalchemy.fields import QuerySelectField, QuerySelectMultipleField
 from wtforms import widgets
-from models import User, Role, InstructionTemplate, StatusEvent,Asset, YarraServer
+from models import *
 from wtforms_alchemy import model_form_factory, ModelFormField
 
 BaseModelForm = model_form_factory(FlaskForm)
@@ -18,13 +18,14 @@ class NewForm(ModelForm):
     pass
 
 class LoginForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
+    username = StringField('Username', validators=[InputRequired()])
+    password = PasswordField('Password', validators=[InputRequired()])
 
 class RegisterForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired(),Length(min=6),EqualTo('password_confirm',message='Passwords must match')])
-    password_confirm = PasswordField('Password (confirm)', validators=[DataRequired(), Length(min=6)])
+    username = StringField('Username', validators=[InputRequired(),Length(min=3), Regexp(r'^\w+$',message='Invalid username: must be lowercase alphanumeric')])
+    email = StringField('Email', validators=[InputRequired(),Email()])
+    password = PasswordField('Password', validators=[InputRequired(),Length(min=6),EqualTo('password_confirm',message='Passwords must match')])
+    password_confirm = PasswordField('Password (confirm)', validators=[InputRequired(), Length(min=6)])
 
 
 class AssetReportForm(FlaskForm):
@@ -57,10 +58,12 @@ class UserForm(ModelForm):
     class Meta:
         model = User
         exclude = ['password', 'username']
-        
+    
+    email = StringField('Email', validators=[InputRequired(),Email()])    
     roles = QuerySelectMultipleField('Roles',get_label=lambda x:x.name,
         widget=widgets.ListWidget(prefix_label=False),
         option_widget=widgets.CheckboxInput())
+    
 
 User.form = UserForm
 
@@ -72,7 +75,7 @@ class ServerForm(ModelForm):
     class Meta:
         model = YarraServer
     
-    path = StringField('Path', validators=[DataRequired()])
+    path = StringField('Path', validators=[InputRequired()])
     roles = QuerySelectMultipleField('Roles',get_label=lambda x:x.name,
         widget=widgets.ListWidget(prefix_label=False),
         option_widget=widgets.CheckboxInput())

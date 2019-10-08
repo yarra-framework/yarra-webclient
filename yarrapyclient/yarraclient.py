@@ -140,7 +140,7 @@ class Task():
     task_data = None # type: TaskData
     server = None # type: Server
 
-    def __init__(self, mode, scan_file_path, protocol, patient_name, acc=None, *, email_notifications:list = None, param_value:int=None):
+    def __init__(self, mode, scan_file_path, protocol, patient_name, priority = Priority.Normal, acc=None, *, email_notifications:list = None, param_value:int=None):
         self.mode = mode
 
         # if (mode_name not in server.modes.keys()):
@@ -169,6 +169,7 @@ class Task():
             required_server_type = None,
             acc_number =     acc,
             patient_name =   patient_name,
+            priority = priority
         )
         # print(self.task_data)
 

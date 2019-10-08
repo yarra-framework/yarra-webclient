@@ -1,27 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel= "icon" media="all" type="image/vnd.microsoft.icon" href="/favicon.ico">
+  <title>{% block title %}YarraWebClient{% endblock %}</title>
 
-    <title>{% block title %}{% endblock %}</title>
 </head>
 <body>
   {% from "_formhelpers.html" import render_field %}
   {% from "_formhelpers.html" import render_form %}
   {% from "_formhelpers.html" import flashes %}
 
-  {% block header %} {% endblock %}
-    <div class="container p-3">
+<nav class="navbar navbar-expand-lg bg-dark navbar-dark">
+  <a class="navbar-brand" href="/">
+    YarraWebClient
+  </a>
+{% block header %}
+{% endblock %}
 
-      {% block content %}{% endblock %}
-        <div id="footer" class="float-right">
-            {% block footer %}
-            &copy; 2019
-            {% endblock %}
-        </div>
-    </div>
+{% if current_user.is_authenticated %}
+  <ul class="navbar-nav ml-auto">
+  <li class="nav-item float-right">
+      <a class="nav-link" href="{{ url_for('login.logout')}}">Logout</a>
+  </li>
+  </ul>
+{% endif %}
+</nav>
+
+<div class="container p-3">
+{% block content %}{% endblock %}
+  <div id="footer" class="float-right">
+  {% block footer %}&copy; 2019{% endblock %}
+  </div>
+</div>
 </body>
 </html>

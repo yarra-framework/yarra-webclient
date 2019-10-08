@@ -60,7 +60,7 @@ admin = Blueprint('admin', __name__,
 @admin.route('/admin/')
 @login_required()
 def admin_page():
-    return redirect(url_for("admin.user_edit"))
+    return redirect(url_for(".user_edit"))
 
 register_view(User,'user','user_edit')
 register_view(YarraServer,'server','server_edit')
