@@ -62,9 +62,9 @@ def submit(task_id,priority):
     if mode is None:
         print("Invalid mode / server combination")
         return
-    t = Task(mode, 'test.dat', 'theProtocol', 'John Doe', task_id, None, priority)
-    t.submit()
-    print(t.task_data)
+    t = Task(mode, 'test.dat', 'theProtocol', 'John Doe', task_id, None, priority, ['extra1.dat','extra2.dat'])
+    #t.submit()
+    print(t.task_data.to_config())
     print("OK")
 
 @app.route('/files/submit.js')
@@ -98,6 +98,11 @@ def index():
 @login_required('submitter')
 def submit_task(): # todo: prevent submissions to incorrect servers
     print(request.form)
+    extra_files = request.form.getlist('extra_files',[])
+    for k in ['file','mode','server','protocol','patient_name','taskid']:
+        if not request.form.get(k):
+            return abort(500)
+
     mode = db.session.query(ModeModel).join(ModeModel.server)\
                 .filter(ModeModel.name==request.form.get('mode'))\
                 .filter(YarraServer.name==request.form.get('server')).scalar()
@@ -115,7 +120,8 @@ def submit_task(): # todo: prevent submissions to incorrect servers
          request.form.get('patient_name'),
          request.form.get('taskid'),
          request.form.get('accession',None),
-         priority
+         priority,
+         extra_files
          )
     print("submitting")
     t.submit()

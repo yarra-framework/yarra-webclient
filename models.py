@@ -35,6 +35,9 @@ class YarraServer(db.Model):
     modes = db.relationship('ModeModel', backref='server', lazy=True)
     roles = db.relationship('Role', secondary='server_roles')
 
+    username =  db.Column(db.String, nullable=False, default="yarra", info={'label':'Path'})
+    password =  db.Column(db.String, nullable=False, default="", info={'label':'Path'})
+
     def get_id(self):
         return self.name
 
@@ -46,13 +49,13 @@ class YarraServer(db.Model):
         return 'name'
 
     def connection(self):
-        return ServerConnection(self.path)
+        return ServerConnection(self.path,self.username, self.password)
 
     def update_modes(self):
         config = ConfigParser()
         config_file = io.BytesIO()
 
-        with ServerConnection(self.path) as c:
+        with self.connection() as c:
             c.get('YarraModes.cfg',config_file)
         config.read_string(config_file.read().decode('UTF-8'))
         mode_info = ( (mode_entry[1], config[mode_entry[1]])  for mode_entry in config.items('Modes') )
@@ -64,8 +67,14 @@ class YarraServer(db.Model):
                 confirmation_mail =  info.get('confirmationmail'),
                 requires_adj_scans = info.getboolean('requiresadjscans'),
                 requires_acc =       info.getboolean('requiresacc'),
+                disabled =           info.getboolean('disabled'),
                 required_server_type = info.get('requiredservertype'),
-                sort_index =         info.getint('sortindex')
+                sort_index =         info.getint('sortindex'),
+                param_label =        info.get('paramlabel'),
+                param_description =  info.get('paramdescription'),
+                param_default =      info.getint('paramdefault'),
+                param_min =          info.getint('parammin'),
+                param_max =          info.getint('parammax')
             ) for name, info in mode_info
         ]
 
@@ -83,8 +92,15 @@ class ModeModel(db.Model):
     required_server_type = db.Column(db.String,nullable=True) 
     server_id =     db.Column(db.Integer, db.ForeignKey('yarra_server.id'))
 
+    param_label = db.Column(db.String)
+    param_description = db.Column(db.String)
+    param_default = db.Column(db.Integer)
+    param_min = db.Column(db.Integer)
+    param_max = db.Column(db.Integer)
+    disabled = db.Column(db.Boolean, default=False)
+
     def __repr__(self):
-        return "< "+", ".join(map(str,[self.name,self.sort_index]))+" >"
+        return "<"+", ".join(map(str,[self.name,self.desc]))+ ( ' [{}]'.format(self.param_label) if self.param_label else "")+">"
 
 # Define the UserRoles association table
 class ServerRoles(db.Model):

@@ -76,6 +76,10 @@ class ServerForm(ModelForm):
         model = YarraServer
     
     path = StringField('Path', validators=[InputRequired()])
+    username = StringField('username', validators=[InputRequired()])
+    password = StringField('password', validators=[InputRequired()])
+    
+
     roles = QuerySelectMultipleField('Roles',get_label=lambda x:x.name,
         widget=widgets.ListWidget(prefix_label=False),
         option_widget=widgets.CheckboxInput())

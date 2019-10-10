@@ -25,13 +25,19 @@
   <div class="form-group row">
     <label for="files" class="col-sm-2 col-form-label" >File</label>
         <div class="col-sm-10">
-    		<input type="file" class="form-control " id="files" name="file" required/>
+    		<input type="file" class="form-control " id="files" name="file" accept=".dat" required/>
 		    <div class="invalid-feedback">
 			    A file is required.
 		    </div>
-
     	</div>
   </div>
+  <div class="form-group row" id="extra_files_entry">
+    <label for="files" class="col-sm-2 col-form-label" >Additional files</label>
+        <div class="col-sm-10">
+    		<input type="file" class="form-control " id="extra_files" name="extra_files" multiple disabled/>
+    	</div>
+  </div>
+
 <div class="card my-2">
   <div class="card-header">
     Scan information
@@ -85,12 +91,32 @@
 	    {% for server in servers %}
 	    <select name="mode_{{server.name}}"  class="form-control {% if not loop.first %} d-none {%endif %}" id="mode_{{server.name}}" required>
 	    	{% for mode in server.modes %}
-	    	<option value="{{mode.name}}">{{ mode.name }}</option>
+	    	<option value="{{mode.name}}">{{ mode.desc }}</option>
 	    	{% endfor %}
 	    </select>
 	    {% endfor %}
-   		</div>
+  		</div>
    	  </div>
+
+
+    {% for server in servers %}
+	{% for mode in server.modes %}
+		{% if mode.param_label %}
+		  <div class="form-group row mode_param_entry d-none" id="mode_{{server.name}}_{{mode.name}}_param">
+		    <label for="notification" class="col-sm-2 col-form-label"><strong>{{mode.param_label}}</strong></label>
+		    <div class="col-sm-10">
+		    <input name='param'  type="number" min="{{mode.param_min}}" max="{{mode.param_max}}" class="form-control" placeholder="">
+    	    <div class="invalid-feedback">
+			    Must be an integer between {{mode.param_min}} and {{mode.param_max}} inclusive
+    		</div>
+	       </div>
+		  </div>
+    {% endif %}
+
+    {% endfor %}
+    {% endfor %}
+
+
 	  <div class="form-group row">
 	    <label for="notification" class="col-sm-2 col-form-label">Notification</label>
 	    <div class="col-sm-10">
@@ -111,7 +137,7 @@
 </div>
 <div class="form-group row">
     <div class="col-12">
-		<button class="btn btn-primary float-right" type="submit" id="submit_btn">Send Task</button>
+		<button class="btn btn-primary float-right" type="submit" id="submit_btn" disabled>Send Task</button>
     	<button class="btn btn-danger float-right mx-2 d-none" type="button" id="cancel_btn">Cancel</button>
 
     </div>

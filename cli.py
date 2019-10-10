@@ -39,6 +39,12 @@ def list_servers():
     for s in servers:
         print(s)
 
+@server_cli.command('modes')
+@click.argument('name')
+def list_modes(name):
+    modes = db.session.query(ModeModel).join(YarraServer).filter(YarraServer.name == name)
+    for m in modes:
+        print(m)
 
 def init_db():
     db.create_all()
@@ -52,10 +58,11 @@ def init_db():
     db.session.add(tobias)
 
 
-    servers = [YarraServer(name='AGR1',path='xdglpdcdap001.nyumc.org', roles=[submit_role]), 
-                YarraServer(name='YarraAda',path='xdglpdcdap002.nyumc.org',roles=[admin_role])]
+    servers = [YarraServer(name='AGR1',username='yarra',path='xdglpdcdap001.nyumc.org', roles=[submit_role]), 
+                YarraServer(name='YarraAda',username='yarra',path='xdglpdcdap002.nyumc.org',roles=[admin_role])]
 
     for s in servers:
+        s.password = 'melbourne'
         s.update_modes()
         db.session.add(s)
 

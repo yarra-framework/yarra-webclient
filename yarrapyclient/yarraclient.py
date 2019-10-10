@@ -94,7 +94,7 @@ class TaskData():
     yarra_client =       'SAC' # type: str 
     client_version =     '0.1' # type: str 
     task_creation_datetime = None # type: datetime 
-
+    task_name = None
     def __init__(self, **kwargs):
         self.task_creation_datetime = datetime.now()
         self.adjustment_files = []
@@ -112,6 +112,7 @@ class TaskData():
             ParamValue =    self.param_value or '0',
             EMailNotification = self.email_notification,
             PatientName =   self.patient_name
+
         )
 
         config['Information'] = dict(
@@ -125,6 +126,10 @@ class TaskData():
                 ClientVersion = self.client_version,
                 ACC =           str(self.acc_number) if self.acc_number is not None else '',
         )
+        config['AdjustmentFiles'] = {}
+        for i,f in enumerate(self.adjustment_files):
+            config['AdjustmentFiles'][ '%{:02x}'.format(i).upper()] = "{}_{}.dat".format(self.task_name,i)
+            config['AdjustmentFiles']['OriginalName_{}'.format(i)] = f
         
         io_file = io.StringIO()
         config.write(io_file)
@@ -140,24 +145,26 @@ class Task():
     task_data = None # type: TaskData
     server = None # type: Server
 
-    def __init__(self, mode, scan_file_path, protocol, patient_name, task_name, acc=None, priority = Priority.Normal, *, email_notifications:list = None, param_value:int=None):
+    def __init__(self, mode, scan_file_path, protocol, patient_name, task_name, acc=None, priority = Priority.Normal, extra_files=None, *, email_notifications = None, param_value=None):
         self.mode = mode
         self.task_name = task_name
+        self.extra_files = extra_files
         # if (mode_name not in server.modes.keys()):
         #     raise Exception('Recon mode "{mode_name}" not available on server {server.name}'.format(**locals()))
 
         # mode = server.modes[mode_name]
-        if mode.requires_adj_scans:
-            raise Exception('Recon mode "{}" requires adjustments, which aren\'t supported yet'.format(mode_name))
+        # if mode.requires_adj_scans:
+        #     raise Exception('Recon mode "{}" requires adjustments, which aren\'t supported yet'.format(mode.name))
 
         if not acc and mode.requires_acc:
-            raise Exception('Recon mode "{}" requires accession.'.format(mode_name))
+            raise Exception('Recon mode "{}" requires accession.'.format(mode.name))
 
         self.scan_file = Path(scan_file_path)
         if not os.path.exists(scan_file_path):
             raise Exception('{} not found'.format(self.scan_file))
         self.task_data = TaskData(
-            scan_file =      self.scan_file.name,
+            task_name = task_name,
+            scan_file =      self.task_name+".dat",
             scan_file_size = os.path.getsize(scan_file_path),
             recon_mode =     mode.name,
             email_notification = ','.join(email_notifications) if email_notifications else '',
@@ -167,7 +174,8 @@ class Task():
             required_server_type = None,
             acc_number =     acc,
             patient_name =   patient_name,
-            priority = priority
+            priority = priority,
+            adjustment_files = extra_files
         )
         # print(self.task_data)
 
@@ -190,13 +198,3 @@ class Task():
                     conn.store(self.task_data.scan_file, scan_f)
             finally:
                 conn.unlock_task(self.task_name)
-
-        # with SoftFileLock(Path(self.server.path,self.task_name+'.lock'), timeout=1):
-        #     task_loc = Path(self.server.path,self.task_name+'.task')
-        #     with open(task_loc,'w') as f:
-        #         self.task_data.to_config().write(f)
-        #     try:
-        #         shutil.copy(self.scan_file, Path(self.server.path,self.task_name+'.dat'))
-        #     except Exception as e:
-        #         os.remove(task_loc)
-        #         raise e

@@ -6,9 +6,13 @@ from smb.smb_structs import OperationFailure
 
 class ServerConnection:
     server_name = None
-    dead = False
-    def __init__(self, server_name):
+    dead = False 
+    username = None
+    password = None
+    def __init__(self, server_name, username, password):
         self.server_name = server_name
+        self.username = username
+        self.password = password
 
     def __enter__(self):
         self.connect()
@@ -21,9 +25,7 @@ class ServerConnection:
         if (self.dead):
             raise Exception("dead connection raised to life")
         print("Connecting to",self.server_name)
-        user = 'yarra'
-        password = 'melbourne'
-        self.conn = SMBConnection(user, password, 'yarra-client', self.server_name)
+        self.conn = SMBConnection(self.username, self.password, 'yarra-client', self.server_name)
         self.conn.connect(self.server_name)
 
     def close(self):
@@ -37,7 +39,6 @@ class ServerConnection:
             return True
         except OperationFailure as e:
             return False
-
 
     def task_locked(self,task_name):
         return self.file_exists('{}.lock'.format(task_name))
