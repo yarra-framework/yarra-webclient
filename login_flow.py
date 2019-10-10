@@ -21,6 +21,7 @@ def user_loader(username):
     login_user = LoginUser()
     login_user.roles = [x.name for x in user.roles]
     login_user.id = user.username
+    login_user.email = user.email
     login_user.user = user
     for role in user.roles:
         if role.name == 'admin':
@@ -38,6 +39,7 @@ def request_loader(request):
     login_user = LoginUser()
     login_user.roles = [x.name for x in user.roles]
     login_user.id = user.username
+    login_user.email = user.email
     login_user.user = user
     user.is_authenticated = pwd_context.verify(request.form['password'], user.password)
     return user

@@ -122,7 +122,7 @@
 	{% for mode in server.modes %}
 		{% if mode.param_label %}
 		  <div class="form-group row mode_param_entry d-none" id="mode_{{server.name}}_{{mode.name}}_param">
-		    <label for="notification" class="col-sm-2 col-form-label"><strong>{{mode.param_label}}</strong></label>
+		    <label for="param" class="col-sm-2 col-form-label"><strong>{{mode.param_label}}</strong></label>
 		    <div class="col-sm-10">
 		    <input name='param'  type="number" min="{{mode.param_min}}" max="{{mode.param_max}}" class="form-control" placeholder="">
     	    <div class="invalid-feedback">
@@ -139,7 +139,7 @@
 	  <div class="form-group row">
 	    <label for="notification" class="col-sm-2 col-form-label">Notification</label>
 	    <div class="col-sm-10">
-	    <input name='notification'  type="text" class="form-control" id="notification" placeholder="">
+	    <input name='notification'  type="text" class="form-control" id="notification" placeholder="" value="{{current_user.email}}">
 		</div>
 	  </div>
       <div class="form-group row">
@@ -171,12 +171,15 @@
 <script src="files/submit.js"></script>
 <script src="files/resumable.js"></script>
 <script type="text/javascript">
-$('.custom-file input').change(function (e) {
-	var files = [];
-	for (var i = 0; i < $(this)[0].files.length; i++) {
-		files.push($(this)[0].files[i].name);
+
+for (file_input of document.querySelectorAll('.custom-file input')) {
+	file_input.onchange = function (e) {
+		var file_input = e.target;
+		var files = Array.from(file_input.files)
+			.map(f=>f.name)
+			.join(', ');
+		file_input.parentElement.querySelector('.custom-file-label').innerText = files;
 	}
-	$(this).next('.custom-file-label').html(files.join(', '));
-});
+};
 </script>
 {% endblock %}
