@@ -20,7 +20,7 @@ import login_flow
 import cli
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_url_path='', static_folder='files')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.sqlite'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
    
@@ -31,10 +31,11 @@ def create_app():
     app.register_blueprint(resumable.resumable_upload)
     app.register_blueprint(admin.admin)
     app.register_blueprint(login_flow.login_blueprint)
-
+    
     return app
 
 app = create_app()
+
 
 @app.template_filter('dt')
 def _jinja2_filter_datetime(date, fmt=None):

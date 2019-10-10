@@ -18,7 +18,7 @@ def login_required(role=None):
                 return login_manager.unauthorized()
 
             if ( role is not None and role not in flask_login.current_user.roles):
-                flash("insufficient permissions",'warning')
+                flash("Insufficient permissions",'warning')
                 if (request.path != "/"):
                     return redirect("/") 
                 else: 
