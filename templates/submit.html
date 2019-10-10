@@ -19,9 +19,19 @@
 #progress-outer.expanded {
 	height: 40px;
 }
+
 .custom-file-input:disabled {
-	opacity: 0 !important;
+	opacity: 0;
 }
+.progress .progress-bar {
+	font-size: 1em;
+    line-height: 1em;
+}
+
+.custom-file-input:disabled + .custom-file-label::after {
+  opacity: 0.65;
+}
+
 </style>
 
  <form id="form" action="/submit_task" method="post"  class="needs-validation" novalidate>
