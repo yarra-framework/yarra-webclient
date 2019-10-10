@@ -17,6 +17,25 @@
 	document.getElementById('server').onchange = function(e) {
 		select_server(e.target.value);
 	}
+	Array.from(document.querySelectorAll('#modes select')).forEach( (e) => {
+		e.onchange = function(e) {
+			Array.from(document.querySelectorAll('.mode_param_entry input')).forEach( (e) => {
+				e.setAttribute('disabled', true);
+			});
+			Array.from(document.querySelectorAll('.mode_param_entry')).forEach( (e) => {
+				e.classList.add('d-none');
+			});
+
+			id = e.target.id + "_"+e.target.value+"_param";
+			param = document.getElementById(id);
+			console.log(id,param);
+			if (param) {
+				param.classList.remove('d-none')
+				param.querySelectorAll('input')[0].removeAttribute('disabled');
+			}
+		}
+	});
+
 	  if (!("Notification" in window)) {
 	  }  // Let's check whether notification permissions have already been granted
 	  else if (Notification.permission === "granted") {
@@ -36,11 +55,12 @@
       form.addEventListener('submit', function(event) {
   		try {
 	   		if (form.checkValidity()) {
-	        	var file = document.querySelector('#files').files[0]
+	        	var file = document.getElementById('files').files[0]
+	        	var files = Array.from(document.getElementById('extra_files').files)
+	        	files.unshift(file);
 				uploader.isComplete = false;
 				uploader.wasCanceled = false;
-	        	console.log(file);
-				uploader.addFile(file);
+				uploader.addFiles(files);
 			} else {
 			    form.classList.add('was-validated');
 			}
@@ -51,7 +71,7 @@
       }, false);
     });
 
-	uploader.on('fileAdded', function(file, e){
+	uploader.on('filesAdded', function(file, e){
 	    document.getElementById('progress-outer').classList.toggle("expanded");
 	    document.getElementById('submit_btn').disabled = true;
 	    document.getElementById('cancel_btn').classList.toggle('d-none');
@@ -89,43 +109,54 @@
 		}
 		progress.textContent = 'Finalizing...';
 		progress.classList.toggle('bg-info');
-
-		var body = new FormData(form)		
-		body.set('file',body.get('file').name);
-		body.set('mode',body.get('mode_'+body.get('server')))
-		body.delete('mode_'+body.get('server'))
-		fetch(form.action, {
-		    method: form.method,
-		    body: body
-		}).then((response) => {
-			resetForm(form);
-			document.getElementById('progress').classList.toggle('bg-info');
-		    if (!response.ok) {
-		    	new Notification("submission error");
-		        throw Error(response.statusText);
-			}
-		}).then( (res) => {
-			new Notification("task submitted");
-		})
+		submit_form();
+		resetForm(form);
 	});
+
 
 
   }, false);
 
+function submit_form(){
+	var form = document.getElementById('form')
+	var body = new FormData(form)		
+	body.set('file',body.get('file').name);
+	
+	extra_files = body.getAll('extra_files');
+	body.delete('extra_files');
+	for (i=0;i<extra_files.length;i++){
+		body.append('extra_files',extra_files[i].name);
+	}
+	body.set('mode',body.get('mode_'+body.get('server')))
+
+
+	document.getElementById('extra_files').files
+	body.delete('mode_'+body.get('server'))
+	fetch(form.action, {
+	    method: form.method,
+	    body: body
+	}).then((response) => {
+		resetForm(form);
+		document.getElementById('progress').classList.toggle('bg-info');
+	    if (!response.ok) {
+	    	new Notification("submission error");
+	        throw Error(response.statusText);
+		}
+	}).then( (res) => {
+		new Notification("task submitted");
+	})
+  }
 
   document.querySelector('#files').addEventListener("change", function () {
-		// var uploader = new Resumable({target:'/resumable_upload', chunkSize:1024*1024*10});
-		// uploader.on('fileAdded', function(file, event){
-		//     uploader.upload();
-		// });
-		//uploader.addFile(this.files[0])
 		document.getElementById('taskId').value = this.files[0].name.split('.').slice(0, -1).join('.')
 		readHeader(this.files[0], function(header){
 			try {
 				var patient_name = getTagValue(header,'PatientName');
+				console.log(patient_name)
 				document.getElementById('patientName').value = patient_name;
 			} catch(err) {
 				var patient_name = null
+				document.getElementById('patientName').value = "";
 			}
 			try { 
 				var protocol_name = getTagValue(header, 'ProtocolName');
@@ -133,6 +164,8 @@
 			} catch(err) {
 
 			}
+			document.getElementById('extra_files').removeAttribute('disabled');
+			document.getElementById('submit_btn').removeAttribute('disabled');
 		})
 	}, false);
 
