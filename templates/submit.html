@@ -3,7 +3,7 @@
 {% if current_user.is_admin %}
   <ul class="navbar-nav float-right">
   <li class="nav-item float-right">
-  <a class="nav-link" href="{{ url_for('admin.user_edit',method='edit')}}">Admin</a>
+  <a class="nav-link" href="{{ url_for('admin.user_edit',method='edit')}}"><i class="fas fa-cogs"></i> Admin</a>
   </li>
 </ul>
 {% endif %}
@@ -40,7 +40,7 @@
 
 <div class="card my-2">
   <div class="card-header">
-    Scan information
+    Scan Information
   </div>
   <div class="card-body" >
   <div class="form-group row">
@@ -69,9 +69,9 @@
 </div>
 </div>
 
-<div class="card my-2">
+<div class="card my-4">
   <div class="card-header">
-	Reconstruction settings
+	Reconstruction Settings
   </div>
   <div class="card-body">
     <h5 class="card-title"></h5>
@@ -139,7 +139,6 @@
     <div class="col-12">
 		<button class="btn btn-primary float-right" type="submit" id="submit_btn" disabled>Send Task</button>
     	<button class="btn btn-danger float-right mx-2 d-none" type="button" id="cancel_btn">Cancel</button>
-
     </div>
 </div>
 </form>
@@ -152,5 +151,13 @@
 {% block footer %}
 <script src="files/submit.js"></script>
 <script src="files/resumable.js"></script>
-
+<script type="text/javascript">
+$('.custom-file input').change(function (e) {
+	var files = [];
+	for (var i = 0; i < $(this)[0].files.length; i++) {
+		files.push($(this)[0].files[i].name);
+	}
+	$(this).next('.custom-file-label').html(files.join(', '));
+});
+</script>
 {% endblock %}
