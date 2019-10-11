@@ -193,8 +193,11 @@ class Task():
                 task_file += '_prio'
 
             try:
+                conn.store(task_file, io.BytesIO(self.task_data.to_config().encode()))
                 with open(str(self.scan_file),'rb') as scan_f:
-                    conn.store(task_file, io.BytesIO(self.task_data.to_config().encode()))
                     conn.store(self.task_data.scan_file, scan_f)
+                for i, file in enumerate(self.extra_files):
+                    with open(str(file),'rb') as f:
+                        conn.store("{}_{}.dat".format(self.task_name,str(i)), f)
             finally:
                 conn.unlock_task(self.task_name)

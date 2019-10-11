@@ -6,7 +6,7 @@ from datetime import date
 
 import click
 import flask_login
-from extensions import db, login_manager, login_required
+from extensions import db, login_manager, login_required, json_errors
 
 from yarrapyclient.yarraclient import Task, Priority
 
@@ -16,14 +16,14 @@ from sqlalchemy.sql import text
 import resumable
 import admin
 import login_flow
-
+import os
 import cli
 
 def create_app():
     app = Flask(__name__, static_url_path='', static_folder='files')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.sqlite'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-   
+    app.config['YARRA_UPLOAD_BASE_DIR'] = 'tmp'
     app.secret_key = "asdfasdfere"
     db.init_app(app) 
     login_manager.init_app(app)
@@ -64,7 +64,7 @@ def submit(task_id,priority):
         print("Invalid mode / server combination")
         return
     t = Task(mode, 'test.dat', 'theProtocol', 'John Doe', task_id, None, priority, ['extra1.dat','extra2.dat'])
-    #t.submit()
+    t.submit()
     print(t.task_data.to_config())
     print("OK")
 
@@ -95,20 +95,24 @@ def index():
 
     return render_template('submit.html', servers=servers)
 
+
+
 @app.route("/submit_task", methods=['POST'])
 @login_required('submitter')
+@json_errors()
 def submit_task(): # todo: prevent submissions to incorrect servers
     print(request.form)
-    extra_files = request.form.getlist('extra_files',[])
-    for k in ['file','mode','server','protocol','patient_name','taskid']:
+    extra_files = request.form.getlist('extra_files')
+    for k in ['file','mode','server','protocol','patient_name','taskid', 'processing']:
         if not request.form.get(k):
-            return abort(500)
+            return abort(400, "Missing field: '{}' is empty.".format(k))
 
     mode = db.session.query(ModeModel).join(ModeModel.server)\
                 .filter(ModeModel.name==request.form.get('mode'))\
                 .filter(YarraServer.name==request.form.get('server')).scalar()
+
     if not mode:
-        return abort(400)
+        return abort(400, "Invalid mode")
 
     processing = request.form.get('processing').lower()
     priority = Priority.Normal
@@ -116,18 +120,17 @@ def submit_task(): # todo: prevent submissions to incorrect servers
         priority = Priority.Night
     elif processing == 'priority':
         priority = Priority.High
-    t = Task(mode, '/tmp/'+request.form.get('file'),
+    t = Task(mode, os.path.join(app.config['YARRA_UPLOAD_BASE_DIR'], flask_login.current_user.id, request.form.get('file')),
          request.form.get('protocol'), 
          request.form.get('patient_name'),
          request.form.get('taskid'),
          request.form.get('accession',None),
          priority,
-         extra_files
+         [os.path.join(app.config['YARRA_UPLOAD_BASE_DIR'], flask_login.current_user.id, f) for f in extra_files if f]
          )
     print("submitting")
     t.submit()
     print("done")
-    return redirect("/")
-
+    return "OK"
 if __name__ == "__main__":
     app.run()
