@@ -22,7 +22,7 @@ window.addEventListener('load', function() {
 
 	$disable_id('extra_files');
 
-	function select_server(server) { 
+	var select_server = server =>  
 		$s('#modes select').forEach( s => {
 			if (s.id == "mode_"+server) {
 				$show(s);
@@ -32,12 +32,12 @@ window.addEventListener('load', function() {
 				$hide(s);
 				$disable(s);
 			}
-		})
-	} 
+		});
+
 	$id('server').onchange = e => select_server(e.target.value);
 
 	$s('#modes select').forEach( mode_select => {
-		mode_select.onchange = (e) => {
+		mode_select.onchange = e => {
 			$s('.mode_param_entry').forEach(
 				entry => { 
 					if (entry.id == mode_select.id + "_"+mode_select.value+"_param") {
@@ -54,23 +54,22 @@ window.addEventListener('load', function() {
 
     $id('cancel_btn').onclick = () => uploader.cancel();
 
-    form.addEventListener('submit', function(event) {
-	    event.preventDefault();
-	    event.stopPropagation();
-    	var form = event.target;
+    form.addEventListener('submit', e => {
+	    e.preventDefault();
+	    e.stopPropagation();
+    	var form = e.target;
    		if (form.checkValidity()) {
-        	var file = $id('files').files[0]
-        	var files = Array.from($id('extra_files').files)
-        	files.unshift(file);
+        	// var file = $id('files').files[0]
+        	// var files = Array.from($id('extra_files').files)
 			uploader.isComplete = false;
 			uploader.wasCanceled = false;
+        	var files = [...$id('files').files, ...$id('extra_files').files]
 			uploader.addFiles(files);
 		} else {
 		    form.classList.add('was-validated');
 		}
       }, false);
     
-
 	uploader.on('filesAdded', (file, e)  => {
 	    $id('progress-outer').classList.toggle("expanded");
 	    $disable_id('submit_btn');
@@ -83,18 +82,28 @@ window.addEventListener('load', function() {
 		progress.textContent = 'Uploading... ' + Math.round(100*file.progress(),2)+'%';
 	});
 	uploader.on('error', (message,file) => {
-		new Notification(message);
-		console.log('error', message, file);
+		error = JSON.parse(message);
+		uploader.error = error.description ||  message || 'unknown error';
 	})
 	uploader.on('beforeCancel', () => uploader.wasCanceled = true);
-
+	uploader.on('catchAll',(event) => {
+		console.log(event);
+	})
 	uploader.on('complete', () => {
 		if (uploader.isComplete) { // sometimes this gets triggered several times??
 			return false; 
 		}
 		uploader.isComplete = true;
+		uploader.files = []
+		if (uploader.error) {
+			console.log("Error:", uploader.error);
+			new Notification("Error: "+uploader.error);
+			reset_form()
+			return
+		}
 		function reset_form() { 
 			$id('progress-outer').classList.toggle("expanded");
+			progress.style.width = '0%';
 			$hide_id('cancel_btn');
 	    	$enable_id('submit_btn');
 	    	[...form.elements].forEach(field => field.removeAttribute("readonly"));
@@ -104,8 +113,6 @@ window.addEventListener('load', function() {
 			reset_form();
 			return;
 		}
-		progress.textContent = 'Finalizing...';
-		progress.classList.toggle('bg-info');
 		submit_form();
 		reset_form();
 	});
@@ -117,8 +124,9 @@ window.addEventListener('load', function() {
 }, false);
 
 function submit_form(){
-	var form = $id('form')
-	var body = new FormData(form)		
+	var form = $id('form');
+	var progress = $id('progress');
+	var body = new FormData(form);
 	body.set('file',body.get('file').name);
 	
 	extra_files = body.getAll('extra_files');
@@ -128,12 +136,15 @@ function submit_form(){
 	}
 	body.set('mode',body.get('mode_'+body.get('server')))
 	body.delete('mode_'+body.get('server'))
+	
+	progress.textContent = 'Finalizing...';
+	progress.classList.toggle('bg-info');
+
 	fetch(form.action, {
 	    method: form.method,
 	    body: body
 	}).then( response => {
-		resetForm(form);
-		$id('progress').classList.toggle('bg-info');
+		progress.classList.toggle('bg-info');
 	    if (!response.ok) {
 	    	new Notification("submission error");
 	        throw Error(response.statusText);
@@ -195,8 +206,8 @@ function submit_form(){
 		}
 		var header_size = data[header_start/4];
 		if (header_size <= 0) {
-			alert("Unknown file format.")
-			return;
+			// alert("Unknown file format.")
+			// return;
 		}
 
 		var headerBlob = file.slice(header_start+19,header_start+header_size); // skip the binary part

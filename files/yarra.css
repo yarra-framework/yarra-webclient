@@ -593,10 +593,10 @@ body > footer > div > div.row.justify-content-center.mt-0 > a:hover
   color: #FFF;
 }
 
-.card-header {
+/*.card-header {
   background-color: #580f8b;
   color: #FFF;
-}
+}*/
 
 .card-header:first-child {
   border-radius: 0px;
@@ -635,16 +635,4 @@ body > footer > div > div.row.justify-content-center.mt-0 > a:hover
 
 #roles {
   list-style-type: none;
-}
-
-.custom-file-input:disabled {
-  opacity: 0;
-}
-.progress .progress-bar {
-  font-size: 1em;
-    line-height: 1em;
-}
-
-.custom-file-input:disabled + .custom-file-label::after {
-  opacity: 0.65;
 }

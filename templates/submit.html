@@ -145,11 +145,27 @@
       <div class="form-group row">
 	    <label for="processing" class="col-sm-2 col-form-label">Processing</label>
 	    <div class="col-sm-10">
-	    <select name='processing'  class="form-control" id="processing">
+
+		<div class="form-check form-check-inline mt-2">
+		  <input class="form-check-input" type="radio" name="processing" id="processing1" value="default" checked>
+		  <label class="form-check-label" for="processing1">Default</label>
+		</div>
+		<div class="form-check form-check-inline">
+		  <input class="form-check-input" type="radio" name="processing" id="processing2" value="night">
+		  <label class="form-check-label" for="processing2">Night</label>
+		</div>
+		<div class="form-check form-check-inline">
+		  <input class="form-check-input" type="radio" name="processing" id="processing3" value="priority">
+		  <label class="form-check-label" for="processing3">Priority</label>
+		</div>
+
+
+
+{#	    <select name='processing'  class="form-control" id="processing">
 	    	<option>Default</option>
 	    	<option>Night</option>
 	    	<option>Priority</option>
-	    </select>
+	    </select>#}
    		</div>
    	  </div>
 	</div>
@@ -173,7 +189,7 @@
 <script type="text/javascript">
 
 for (file_input of document.querySelectorAll('.custom-file input')) {
-	file_input.onchange = function (e) {
+	file_input.onchange = e => {
 		var file_input = e.target;
 		var files = Array.from(file_input.files)
 			.map(f=>f.name)
