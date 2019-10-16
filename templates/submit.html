@@ -32,6 +32,36 @@
   opacity: 0.65;
 }
 
+.custom-radio .custom-control-input:checked ~ .custom-control-label::before {
+  background-color: #490C73 !important;
+}
+
+.custom-radio .custom-control-input:disabled:checked ~ .custom-control-label::before {
+  background-color: rgba(73, 12, 115, 0.5) !important;
+}
+
+.custom-control-input:focus ~ .custom-control-label::before {
+  -webkit-box-shadow: 0 0 0 1px #fff, 0 0 0 0.2rem rgba(73, 12, 115, 0.5);
+          box-shadow: 0 0 0 1px #fff, 0 0 0 0.2rem rgba(73, 12, 115, 0.5);
+}
+
+.custom-control-input:active ~ .custom-control-label::before {
+  color: #fff;
+  background-color: #490C73 !important;
+}
+.custom-control-input:checked~.custom-control-label::before {
+  border-color: #490C73 !important;
+}
+
+.custom-control-input:disabled ~ .custom-control-label {
+  color: #868e96;
+}
+
+.custom-control-input:disabled ~ .custom-control-label::before {
+  background-color: #e9ecef  !important;
+}
+
+
 </style>
 
  <form id="form" action="/submit_task" method="post"  class="needs-validation" novalidate>
