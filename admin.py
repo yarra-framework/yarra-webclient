@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, abort
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash,send_from_directory
-from extensions import login_required
+from extensions import login_required, db
 from models import User, Role, YarraServer, ModeModel
 from flask.views import View
 from forms import NewForm, LoginForm, AssetReportForm, InstructionTemplateForm, AssetEditForm

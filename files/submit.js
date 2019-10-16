@@ -1,28 +1,105 @@
-var $id = i => document.getElementById(i)
-var $s = i => document.querySelectorAll(i)
-var $disable = i => i.setAttribute('disabled', true);
-var $disable_id = i => $id(i).setAttribute('disabled', true);
+const $id = i => document.getElementById(i)
+const $s = i => document.querySelectorAll(i)
+const $disable = i => i.setAttribute('disabled', true);
+const $disable_id = i => $id(i).setAttribute('disabled', true);
 
-var $enable = i => i.removeAttribute('disabled');
-var $enable_id = i => $id(i).removeAttribute('disabled');
+const $enable = i => i.removeAttribute('disabled');
+const $enable_id = i => $id(i).removeAttribute('disabled');
 
-var $show = i => i.classList.remove('d-none');
-var $show_id = i => $id(i).classList.remove('d-none');
+const $show = i => i.classList.remove('d-none');
+const $show_id = i => $id(i).classList.remove('d-none');
 
-var $hide = i => i.classList.add('d-none');
-var $hide_id = i => $id(i).classList.add('d-none');
+const $hide = i => i.classList.add('d-none');
+const $hide_id = i => $id(i).classList.add('d-none');
 
+const $cat = (r,f) => r.map(f).join('')
+const $set_html = (id, val) => $id(id).innerHTML = val;
 
+var pick_case = (id, patient, protocol, date, acc, filename) => {
+	$id('search_box').value = [patient,protocol,date].join('; ');
+	$id('search_box').setAttribute("readonly",true);
 
+	$id('patientName').value = patient;
+	$id('accession').value = acc;
+	$id('taskId').value = filename.split('.').slice(0, -1).join('.')
+	$id('protocol').value = protocol;
+	$set_html('search_btn','Clear');
+	$set_html('search_results', '');
+	$hide_id('search_results_box');
+	$enable_id('submit_btn');
+	archive_case = {id:id, filename:filename}
+}
+
+var archive_case = null
+var submit_mode = "upload"
 window.addEventListener('load', function() {
-    var form = $id('form');
-	var progress = $id('progress');
+    const form = $id('form');
+	const progress = $id('progress');
 
-	var uploader = new Resumable({target:'/resumable_upload', chunkSize:1024*1024*10});
+	const uploader = new Resumable({target:'/resumable_upload', chunkSize:1024*1024*10});
+
 
 	$disable_id('extra_files');
+	$s('#nav-tab .nav-item').forEach(
+		e => e.onclick = (ev) => {
+			ev.preventDefault();
+			$s('#nav-tab .nav-item').forEach(e=>e.classList.remove('active'))
+			$s('#nav-tabContent .tab-pane').forEach(e=>{e.classList.remove('show'); e.classList.remove('active')})
+			e.classList.add('active')
+			let tab = e.getAttribute('aria-controls')
+			$id(tab).classList.add('active')
+			$id(tab).classList.add('show')
+			console.log(tab);
+			if (tab == "nav-upload") {
+				submit_mode = "upload"
+				$id('files').removeAttribute('disabled')
+				$id('files').setAttribute('required', true);
+			} else if (tab == "nav-archive") {
+				submit_mode = "archive"
+				$id('files').setAttribute('disabled', true)
+				$id('files').removeAttribute('required');
+				$id('files').value = '';
+			    $s('.custom-file-label')[0].innerHTML = $s('.custom-file-label')[0].getAttribute('default')
+			    $disable_id('extra_files');
+			}
 
-	var select_server = server =>  
+		})
+
+
+	$id('search_btn').onclick = function(e) {
+	    e.preventDefault();
+	    e.stopPropagation();
+	    search_box = $id('search_box');
+	    if (search_box.getAttribute('readonly')) {
+	    	search_box.removeAttribute('readonly');
+	    	$set_html('search_btn','Search');
+			$disable_id('submit_btn');
+	    	search_box.value = '';
+	    	archive_case = null;
+	    	return;
+	    }
+	    url = "/search?needle="+(search_box.value)
+		fetch(url, {
+			    method: 'get',
+			}).then(r=>r.json()).then( r => {$set_html('search_results',`
+		<tbody>
+		    ${$cat(r, a => `<tr><td>${a.patient_name}</td>
+		    	 <td>${a.accession}</td> <td>${a.protocol}</td> 
+		    	 <td>${a.acquisition_date}&nbsp;${a.acquisition_time}</td>
+		    	 <td>
+					<div class="form-check form-check-inline mt-2">
+					  <button class="btn btn-primary" 
+					  	onclick="event.preventDefault(); pick_case(${a.id},'${a.patient_name}','${a.protocol}', '${a.acquisition_date}', '${a.accession}','${a.filename}');">Select</button>
+					</div>
+				 </td>
+		    	 </tr>`)}
+		</tbody>`);
+		$show_id('search_results_box');
+		})
+	}
+
+
+	const select_server = server =>  
 		$s('#modes select').forEach( s => {
 			if (s.id == "mode_"+server) {
 				$show(s);
@@ -51,23 +128,30 @@ window.addEventListener('load', function() {
 			);
 		}
 	});
+	select_server($id('server').value);
 
     $id('cancel_btn').onclick = () => uploader.cancel();
 
     form.addEventListener('submit', e => {
 	    e.preventDefault();
 	    e.stopPropagation();
-    	var form = e.target;
-   		if (form.checkValidity()) {
-        	// var file = $id('files').files[0]
-        	// var files = Array.from($id('extra_files').files)
-			uploader.isComplete = false;
-			uploader.wasCanceled = false;
-        	var files = [...$id('files').files, ...$id('extra_files').files]
-			uploader.addFiles(files);
-		} else {
-		    form.classList.add('was-validated');
-		}
+    	const form = e.target;
+   		if (!form.checkValidity()) {
+   			form.classList.add('was-validated');
+   			return;
+   		}
+    	if (submit_mode == 'archive') {
+    		$id('progress-outer').classList.toggle("expanded");
+			progress.style.width = '100%';
+			[...form.elements].forEach(field => field.setAttribute("readonly",true));
+			submit_form()
+			reset_form()
+    	}
+
+		uploader.isComplete = false;
+		uploader.wasCanceled = false;
+    	const files = [...$id('files').files, ...$id('extra_files').files]
+		uploader.addFiles(files);
       }, false);
     
 	uploader.on('filesAdded', (file, e)  => {
@@ -124,22 +208,26 @@ window.addEventListener('load', function() {
 }, false);
 
 function submit_form(){
-	var form = $id('form');
-	var progress = $id('progress');
-	var body = new FormData(form);
-	body.set('file',body.get('file').name);
-	
-	extra_files = body.getAll('extra_files');
-	body.delete('extra_files');
-	for ( file of extra_files ) {
-		body.append('extra_files',file.name);
+	const form = $id('form');
+	const progress = $id('progress');
+	const body = new FormData(form);
+	if (submit_mode == 'upload') {
+		body.set('file',body.get('file').name);
+		extra_files = body.getAll('extra_files');
+		body.delete('extra_files');
+		for ( const file of extra_files ) {
+			body.append('extra_files',file.name);
+		}
+	} else if (submit_mode == 'archive') {
+		body.set('archive_id', archive_case.id)
+		body.set('archive_file', archive_case.filename)
 	}
 	body.set('mode',body.get('mode_'+body.get('server')))
 	body.delete('mode_'+body.get('server'))
 	
 	progress.textContent = 'Finalizing...';
 	progress.classList.toggle('bg-info');
-
+	console.log(body);
 	fetch(form.action, {
 	    method: form.method,
 	    body: body
@@ -151,6 +239,8 @@ function submit_form(){
 		}
 	}).then( res => {
 		new Notification("task submitted");
+		if (submit_mode == 'archive') {
+		}
 	})
   }
 
@@ -158,17 +248,14 @@ function submit_form(){
 		$id('taskId').value = this.files[0].name.split('.').slice(0, -1).join('.')
 		readHeader(this.files[0], function(header){
 			try {
-				var patient_name = getTagValue(header,'PatientName');
-				$id('patientName').value = patient_name;
+				$id('patientName').value = getTagValue(header,'PatientName');
 			} catch(err) {
-				var patient_name = null
 				$id('patientName').value = "";
 			}
 			try { 
-				var protocol_name = getTagValue(header, 'ProtocolName');
-				$id('protocol').value = protocol_name;
+				$id('protocol').value = getTagValue(header, 'ProtocolName');
 			} catch(err) {
-
+				console.log(err)
 			}
 			$enable_id('extra_files');
 			$enable_id('submit_btn');
@@ -234,33 +321,34 @@ function getTagValue(data,tagName,do_replace,start=0) {
   // looks like } {
   if (braces_begin > braces_end ) throw new Error('Invalid tag detected');
 
-  var tag_contents = data.subarray(braces_begin,braces_end)
+  const tag_contents = data.subarray(braces_begin,braces_end)
 
   // Find the last quoted thing in the subarray...
-  var val_end = tag_contents.lastIndexOf(char('"'))
+  const val_end = tag_contents.lastIndexOf(char('"'))
   if (val_end == -1) return braces_end; // oh, it's just empty, never mind
-  var val_begin = tag_contents.lastIndexOf(char('"'),val_end-1)+1
+  const val_begin = tag_contents.lastIndexOf(char('"'),val_end-1)+1
   if (val_begin == -1) throw new Error('Invalid tag detected'); // Can't find the opening quote
 
-  var tag_value = tag_contents.subarray(val_begin,val_end);
+  const tag_value = tag_contents.subarray(val_begin,val_end);
   return utf8(tag_value);
   // found_tag_values.add(utf8(tag_value));
   // tag_value.set(asUint8Array(do_replace(val_end-val_begin)));
   // return braces_end+1;
 }
 
-function find_tag(data, name, start) {
+function find_tag(data, name_, start) {
   var s = start || 0
-  var name = asUint8Array(name);
+  const name = asUint8Array(name_);
+  let tag_begin = -1;
   do {
-	  var tag_begin = data.indexOf(char('<'),s)
+	  tag_begin = data.indexOf(char('<'),s)
 	  if ( tag_begin == -1 ) return -1
-	  var tag_begin_check = data.indexOf(char('<'),tag_begin+1)
-	  var tag_end = data.indexOf(char('>'),tag_begin+1)
+	  let tag_begin_check = data.indexOf(char('<'),tag_begin+1)
+	  let tag_end = data.indexOf(char('>'),tag_begin+1)
 	  if (tag_begin_check > -1 && tag_begin_check < tag_end) {
 	  	throw new Error('Invalid tag detected');
 	  }
-	  var tag_value = new Uint8Array(data.slice(tag_begin+1,tag_end))
+	  let tag_value = new Uint8Array(data.slice(tag_begin+1,tag_end))
 	  // console.log("tag_value", tag_value, new TextDecoder("utf-8").decode(tag_value))
 	  // console.log("name", name, new TextDecoder("utf-8").decode(name))
 	  s = tag_end+1
@@ -282,7 +370,7 @@ function asUint8Array(input) {
     // This naive transform only supports ASCII patterns. UTF-8 support
     // not necessary for the intended use case here.
     var arr = new Uint8Array(input.length);
-    for (var i = 0; i < input.length; i++) {
+    for (let i = 0; i < input.length; i++) {
       var c = input.charCodeAt(i);
       if (c > 127) {
         //throw new TypeError("Only ASCII patterns are supported");
@@ -299,7 +387,7 @@ function asUint8Array(input) {
 function arrays_equal(dv1, dv2)
 {
     if (dv1.length != dv2.length) return false;
-    for (var i=0; i < dv1.length; i++)
+    for (let i=0; i < dv1.length; i++)
     {
         if (dv1[i] != dv2[i]) return false;
     }

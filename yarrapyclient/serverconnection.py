@@ -54,13 +54,24 @@ class ServerConnection:
         else:
             raise Exception('{} does not appear to be locked'.format(task_name))
 
-    def store(self, file_name, file_obj, *, force=False):
+    def delete(self, task_name, file):
+        if self.task_locked(task_name):
+            self.conn.deleteFiles('YarraServer',file)       
+        else:
+            raise Exception('{} does not appear to be locked'.format(task_name))
+
+
+    def store(self, task_name, file_name, file_obj, *, force=False):
         print("Storing file {}".format(file_name))
         path = Path(file_name)
-        if not force and self.file_exists(path.name):
-            raise Exception('{} exists on server'.format(path.name))
 
-        self.conn.storeFile('YarraServer',path.name,file_obj)
+        if self.task_locked(task_name):
+            if not force and self.file_exists(path.name):
+                raise Exception('{} exists on server'.format(path.name))
+            self.conn.storeFile('YarraServer',path.name,file_obj)
+        else:
+            raise Exception('{} does not appear to be locked'.format(task_name))
+            
         print("Stored file")
 
     def get(self, file_name, file_obj):
