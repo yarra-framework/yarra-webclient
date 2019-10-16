@@ -10,7 +10,7 @@ import os
 import shutil
 import io
 from .serverconnection import ServerConnection
-
+from smb.smb_structs import OperationFailure
 class Priority(Enum):
      Normal = 1
      Night  = 2
@@ -126,10 +126,11 @@ class TaskData():
                 ClientVersion = self.client_version,
                 ACC =           str(self.acc_number) if self.acc_number is not None else '',
         )
-        config['AdjustmentFiles'] = {}
-        for i,f in enumerate(self.adjustment_files):
-            config['AdjustmentFiles'][ '%{:02x}'.format(i).upper()] = "{}_{}.dat".format(self.task_name,i)
-            config['AdjustmentFiles']['OriginalName_{}'.format(i)] = f
+        if self.adjustment_files:
+            config['AdjustmentFiles'] = {}
+            for i,f in enumerate(self.adjustment_files):
+                config['AdjustmentFiles'][ '%{:02x}'.format(i).upper()] = "{}_{}.dat".format(self.task_name,i)
+                config['AdjustmentFiles']['OriginalName_{}'.format(i)] = f
         
         io_file = io.StringIO()
         config.write(io_file)
@@ -179,6 +180,9 @@ class Task():
         )
         # print(self.task_data)
 
+    def __repr__(self):
+        return self.task_data.__repr__()
+
     def submit(self):
         with self.mode.server.connection() as conn:
             try:
@@ -193,11 +197,29 @@ class Task():
                 task_file += '_prio'
 
             try:
-                conn.store(task_file, io.BytesIO(self.task_data.to_config().encode()))
+                conn.store(self.task_name, task_file, io.BytesIO(self.task_data.to_config().encode()))
                 with open(str(self.scan_file),'rb') as scan_f:
-                    conn.store(self.task_data.scan_file, scan_f)
-                for i, file in enumerate(self.extra_files):
-                    with open(str(file),'rb') as f:
-                        conn.store("{}_{}.dat".format(self.task_name,str(i)), f)
+                    conn.store(self.task_name, self.task_data.scan_file, scan_f)
+                if self.extra_files:
+                    for i, file in enumerate(self.extra_files):
+                        with open(str(file),'rb') as f:
+                            conn.store(self.task_name, "{}_{}.dat".format(self.task_name,str(i)), f)
+                            
+            except Exception as e:
+                # Clean up...
+                try:
+                    conn.delete(self.task_name, self.task_data.scan_file)
+                except OperationFailure: pass
+                try:
+                    conn.delete(self.task_name, task_file)
+                except OperationFailure: pass
+
+                if self.extra_files:
+                    for i in range(len(self.extra_files)):
+                        try:
+                            conn.delete(self.task_name,  "{}_{}.dat".format(self.task_name,str(i)))
+                        except OperationFailure: pass
+
+                raise e
             finally:
                 conn.unlock_task(self.task_name)

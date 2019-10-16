@@ -6,6 +6,31 @@ from extensions import db
 from configparser import ConfigParser
 import io
 from yarrapyclient.serverconnection import ServerConnection
+
+class yasArchive(db.Model):
+    __bind_key__ = 'archive'
+    __tablename__ = 'yasArchive'
+    id = db.Column(db.Integer, primary_key=True)
+    Path = db.Column(db.String, unique=True)
+    LastSeen = db.Column(db.Integer, nullable=False) 
+    Filename = db.Column(db.String, nullable=False) 
+    Path = db.Column(db.String, nullable=False) 
+    WriteTime = db.Column(db.Integer, nullable=False) 
+    PatientName = db.Column(db.String, nullable=False) 
+    PatientID = db.Column(db.String, nullable=False) 
+    PatientAge = db.Column(db.String, nullable=False) 
+    PatientGender = db.Column(db.String, nullable=False) 
+    ProtocolName = db.Column(db.String, nullable=False) 
+    AcquisitionTime = db.Column(db.String, nullable=False) 
+    AcquisitionDate = db.Column(db.String, nullable=False) 
+    MRSystem = db.Column(db.String, nullable=False) 
+    AccessionNumber = db.Column(db.String, nullable=False) 
+    YarraServer = db.Column(db.String, nullable=False) 
+
+
+    def __repr__(self):
+        return "<yas {} {}>".format(self.AccessionNumber, self.ProtocolName)
+
 class AssetStatus(enum.Enum):
     up = 0
     down = 1
