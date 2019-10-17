@@ -11,65 +11,13 @@
 
 {% block content %}
 {{ flashes() }}
-<style>
-#progress-outer {
-	height: 0px;
-	transition: height 0.4s linear;
-}
-#progress-outer.expanded {
-	height: 40px;
-}
-
-.custom-file-input:disabled {
-	opacity: 0;
-}
-.progress .progress-bar {
-	font-size: 1em;
-    line-height: 1em;
-}
-
-.custom-file-input:disabled + .custom-file-label::after {
-  opacity: 0.65;
-}
-
-.custom-radio .custom-control-input:checked ~ .custom-control-label::before {
-  background-color: #490C73 !important;
-}
-
-.custom-radio .custom-control-input:disabled:checked ~ .custom-control-label::before {
-  background-color: rgba(73, 12, 115, 0.5) !important;
-}
-
-.custom-control-input:focus ~ .custom-control-label::before {
-  -webkit-box-shadow: 0 0 0 1px #fff, 0 0 0 0.2rem rgba(73, 12, 115, 0.5);
-          box-shadow: 0 0 0 1px #fff, 0 0 0 0.2rem rgba(73, 12, 115, 0.5);
-}
-
-.custom-control-input:active ~ .custom-control-label::before {
-  color: #fff;
-  background-color: #490C73 !important;
-}
-.custom-control-input:checked~.custom-control-label::before {
-  border-color: #490C73 !important;
-}
-
-.custom-control-input:disabled ~ .custom-control-label {
-  color: #868e96;
-}
-
-.custom-control-input:disabled ~ .custom-control-label::before {
-  background-color: #e9ecef  !important;
-}
-
-
-</style>
 
  <form id="form" action="/submit_task" method="post"  class="needs-validation" novalidate>
 
-<nav>
-  <div class="nav nav-tabs" id="nav-tab" role="tablist" >
-    <a style="color:grey;" class="nav-item nav-link active" id="nav-upload-tab" data-toggle="tab" href="" role="tab" aria-controls="nav-upload" aria-selected="true">Upload</a>
-    <a style="color:grey;" class="nav-item nav-link " id="nav-archive-tab" data-toggle="tab" href="" role="tab" aria-controls="nav-archive" aria-selected="false">Archive</a>
+<nav class="mb-4">
+  <div class="nav nav-tabs modes" id="nav-tab" role="tablist" >
+    <a class="nav-item nav-link active" id="nav-upload-tab" data-toggle="tab" href="" role="tab" aria-controls="nav-upload" aria-selected="true"><i class="fas fa-upload"></i> Upload File</a>
+    <a class="nav-item nav-link " id="nav-archive-tab" data-toggle="tab" href="" role="tab" aria-controls="nav-archive" aria-selected="false"><i class="fas fa-search"></i> Search Archive</a>
   </div>
 </nav>
 <div class="tab-content" id="nav-tabContent">
@@ -78,7 +26,7 @@
     <div class="col-sm-12">
     	<div class= "custom-file">
 			<input type="file" class="form-control custom-file-input" id="files" name="file" accept=".dat" required/>
-		    <label for="files" class="custom-file-label" default="Choose Twix File..." >Choose Twix File...</label>
+		    <label for="files" class="custom-file-label" default="Choose raw-data file..." >Choose raw-data file...</label>
 		    <div class="invalid-feedback">
 			    A file is required.
 		    </div>
@@ -98,10 +46,10 @@
   <div class="tab-pane fade" id="nav-archive" role="tabpanel" aria-labelledby="nav-profile-tab">
   	<div class="row">
 	  <div class="col-sm-11 form-group">
-    	  <input type="text" name="search_box" class="form-control" id="search_box" placeholder="search" required>
+    	  <input type="text" name="search_box" class="form-control" id="search_box" placeholder="Search case..." style="height: 37px !important;" required>
     	</div>
 	  <div class="col-sm-1">
-	    <button class="btn btn-primary float-right" type="submit" id="search_btn">Search</button>
+	    <button class="btn btn-primary float-right" type="submit" id="search_btn" style="height: 37px;">Search</button>
 	</div>
 	</div>
   <div id="search_results_box" class="card my-4 d-none">
@@ -225,7 +173,7 @@
    	  </div>
 	</div>
 </div>
-<div class="form-group row">
+<div class="form-group row mb-5">
     <div class="col-12">
 		<button class="btn btn-primary float-right" type="submit" id="submit_btn" disabled>Send Task</button>
     	<button class="btn btn-danger float-right mx-2 d-none" type="button" id="cancel_btn">Cancel</button>
