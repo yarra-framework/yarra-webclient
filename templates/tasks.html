@@ -1,0 +1,44 @@
+{%extends "base.html" %}
+{% block title %} Tasks {% endblock %}
+
+{% macro row(key,value) %}
+  <div class="form-group row">
+	    <div class="col-sm-4">
+  	    	<strong>{{key}}</strong>
+  	    </div>
+  	    <div class="col-sm-8">
+  	      	{{value}}
+  	    </div>
+  </div>
+{% endmacro %}
+
+{% block content %}
+  {{ flashes() }}
+<ul>
+{% for t in tasks %}
+<div class="card my-4">
+  <div class="card-header">
+	{{t.name}}
+</div>
+  <div class="card-body" >
+  <div class="form-group row">
+<div class="col-lg-6">
+  {{row('Status', t.submission_status)}}
+  {{row('Server', t.mode.server.name)}}
+  {{row('Priority', t.priority)}}
+  {{row('Protocol', t.protocol)}}
+  {{row('Mode', t.mode.name)}}
+</div>
+
+<div class="col-lg-6">
+  {{row('Accession', t.accession or 'None')}}
+  {%if t.mode.param_label %}
+	{{row(t.mode.param_label, t.param_value)}}
+  {%endif %}
+</div>
+</div>
+</div>
+</div>
+{% endfor %}
+</ul>
+{% endblock %}

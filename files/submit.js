@@ -52,15 +52,17 @@ window.addEventListener('load', function() {
 			console.log(tab);
 			if (tab == "nav-upload") {
 				submit_mode = "upload"
-				$id('files').removeAttribute('disabled')
 				$id('files').setAttribute('required', true);
+				$enable_id('files');
+			    $disable_id('search_box');
 			} else if (tab == "nav-archive") {
 				submit_mode = "archive"
-				$id('files').setAttribute('disabled', true)
+				$disable_id('files');
 				$id('files').removeAttribute('required');
 				$id('files').value = '';
 			    $s('.custom-file-label')[0].innerHTML = $s('.custom-file-label')[0].getAttribute('default')
 			    $disable_id('extra_files');
+			    $enable_id('search_box');
 			}
 
 		})
@@ -141,11 +143,11 @@ window.addEventListener('load', function() {
    			return;
    		}
     	if (submit_mode == 'archive') {
-    		$id('progress-outer').classList.toggle("expanded");
-			progress.style.width = '100%';
-			[...form.elements].forEach(field => field.setAttribute("readonly",true));
+   			//$id('progress-outer').classList.toggle("expanded");
+			// progress.style.width = '100%';
+			// [...form.elements].forEach(field => field.setAttribute("readonly",true));
 			submit_form()
-			reset_form()
+			//reset_form()
     	}
 
 		uploader.isComplete = false;
@@ -234,12 +236,15 @@ function submit_form(){
 	}).then( response => {
 		progress.classList.toggle('bg-info');
 	    if (!response.ok) {
-	    	new Notification("submission error");
-	        throw Error(response.statusText);
+	    	response.json().then(r=>{
+		        alert("Error: "+r.description);
+	    	})
+	        throw Error(r);
 		}
 	}).then( res => {
 		new Notification("task submitted");
 		if (submit_mode == 'archive') {
+			window.location.reload()
 		}
 	})
   }
