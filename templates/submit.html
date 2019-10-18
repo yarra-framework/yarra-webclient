@@ -1,13 +1,4 @@
 {%extends "base.html" %}
-{% block header %}
-{% if current_user.is_admin %}
-  <ul class="navbar-nav float-right">
-  <li class="nav-item float-right">
-  <a class="nav-link" href="{{ url_for('admin.user_edit',method='edit')}}"><i class="fas fa-cogs"></i> Admin</a>
-  </li>
-</ul>
-{% endif %}
-{% endblock %}
 
 {% block content %}
 {{ flashes() }}
@@ -46,7 +37,7 @@
   <div class="tab-pane fade" id="nav-archive" role="tabpanel" aria-labelledby="nav-profile-tab">
   	<div class="row">
 	  <div class="col-sm-11 form-group">
-    	  <input type="text" name="search_box" class="form-control" id="search_box" placeholder="Search case..." style="height: 37px !important;" required>
+    	  <input type="text" name="search_box" class="form-control" id="search_box" placeholder="Search case..." style="height: 37px !important;" required disabled>
     	</div>
 	  <div class="col-sm-1">
 	    <button class="btn btn-primary float-right" type="submit" id="search_btn" style="height: 37px;">Search</button>

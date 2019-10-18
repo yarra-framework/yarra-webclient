@@ -11,11 +11,14 @@ import shutil
 import io
 from .serverconnection import ServerConnection
 from smb.smb_structs import OperationFailure
-class Priority(Enum):
-     Normal = 1
-     Night  = 2
-     High   = 3
 
+class Priority(Enum):
+    Normal = 1
+    Night  = 2
+    High   = 3
+
+    def __str__(self):
+        return self.name
 
 # class Mode():
 #     name = None  # type: str
@@ -146,16 +149,14 @@ class Task():
     task_data = None # type: TaskData
     server = None # type: Server
 
+    @staticmethod
+    def from_other(t):
+        return Task(t.mode, t.scan_file_path, t.protocol, t.patient_name, t.name, t.accession, t.priority, t.extra_files)
+
     def __init__(self, mode, scan_file_path, protocol, patient_name, task_name, acc=None, priority = Priority.Normal, extra_files=None, *, email_notifications = None, param_value=None):
         self.mode = mode
         self.task_name = task_name
         self.extra_files = extra_files
-        # if (mode_name not in server.modes.keys()):
-        #     raise Exception('Recon mode "{mode_name}" not available on server {server.name}'.format(**locals()))
-
-        # mode = server.modes[mode_name]
-        # if mode.requires_adj_scans:
-        #     raise Exception('Recon mode "{}" requires adjustments, which aren\'t supported yet'.format(mode.name))
 
         if not acc and mode.requires_acc:
             raise Exception('Recon mode "{}" requires accession.'.format(mode.name))
@@ -204,7 +205,7 @@ class Task():
                     for i, file in enumerate(self.extra_files):
                         with open(str(file),'rb') as f:
                             conn.store(self.task_name, "{}_{}.dat".format(self.task_name,str(i)), f)
-                            
+
             except Exception as e:
                 # Clean up...
                 try:

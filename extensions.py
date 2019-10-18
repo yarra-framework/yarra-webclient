@@ -12,6 +12,51 @@ from werkzeug.exceptions import HTTPException
 import traceback
 
 from flask import json
+
+from celery import Celery
+
+def make_celery(app):
+    celery = Celery('app')#, broker=app.config['CELERY_BROKER_URL'])
+    celery.conf.update({
+        'broker_url': 'filesystem://',
+        'broker_transport_options': {
+            'data_folder_in': 'broker/out',
+            'data_folder_out': 'broker/out',
+            'data_folder_processed': 'broker/processed'
+        },
+        # 'imports': ('tasks',),
+        'result_persistent': False,
+        'task_serializer': 'json',
+        'result_serializer': 'json',
+        'accept_content': ['json']})
+
+    # celery.conf.update(app.config)
+    TaskBase = celery.Task
+    class ContextTask(TaskBase):
+        abstract = True
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return TaskBase.__call__(self, *args, **kwargs)
+    celery.Task = ContextTask
+    return celery
+
+# from celery import Celery
+
+# celery = Celery('app')
+# celery.conf.update({
+#     'broker_url': 'filesystem://',
+#     'broker_transport_options': {
+#         'data_folder_in': 'broker/out',
+#         'data_folder_out': 'broker/out',
+#         'data_folder_processed': 'broker/processed'
+#     },
+#     # 'imports': ('tasks',),
+#     'result_persistent': False,
+#     'task_serializer': 'pickle',
+#     'result_serializer': 'json',
+#     'accept_content': ['pickle']})
+
+
 def handle_exception(e):
     """Return JSON instead of HTML for HTTP errors."""
     # start with the correct headers and status code from the error

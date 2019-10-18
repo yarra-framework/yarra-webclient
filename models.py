@@ -6,6 +6,8 @@ from extensions import db
 from configparser import ConfigParser
 import io
 from yarrapyclient.serverconnection import ServerConnection
+from yarrapyclient.yarraclient import Priority
+from enum import Enum
 
 class yasArchive(db.Model):
     __bind_key__ = 'archive'
@@ -52,6 +54,35 @@ class User(db.Model):
 
     def __repr__(self):
         return "<User {}>".format(self.username)
+
+class SubmissionStatus(Enum):
+     Initial = 1
+     Submitting  = 2
+     Submitted   = 3
+     Failed   = 4
+
+     def __str__(self):
+        return self.name
+
+class YarraTask(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship('User', backref='tasks')
+    mode_id = db.Column(db.Integer, db.ForeignKey('mode_model.id'))
+    mode = db.relationship('ModeModel')
+
+    scan_file_path =    db.Column(db.String, nullable=False)
+    protocol =          db.Column(db.String, nullable=False)
+    patient_name = db.Column(db.String, nullable=False)
+    name = db.Column(db.String, nullable=False)
+    accession = db.Column(db.String, nullable=True)
+    priority = db.Column(db.Enum(Priority))
+    param_value = db.Column(db.Integer)
+
+    extra_files=db.Column(db.PickleType, nullable=True)
+    email_notifications=db.Column(db.PickleType, nullable=True)
+
+    submission_status=db.Column(db.Enum(SubmissionStatus), default=SubmissionStatus.Initial)
 
 class YarraServer(db.Model):
     id =    db.Column(db.Integer, primary_key=True)
