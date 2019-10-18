@@ -83,7 +83,7 @@ def init():
 def reset():
     if input("Really reset the entire database? (Y/N) ") != "Y":
         return
-    db.drop_all()
+    db.drop_all(bind=None)
     init_db()
     print("OK")
 
