@@ -4,7 +4,7 @@ from flask import Flask, request, session, g, redirect, url_for, abort, \
 from extensions import login_required, db
 from models import User, Role, YarraServer, ModeModel
 from flask.views import View
-from forms import NewForm, LoginForm, AssetReportForm, InstructionTemplateForm, AssetEditForm
+from forms import NewForm, LoginForm
 
 class ObjectView(View):
     def __init__(self, asset_model,view_func):

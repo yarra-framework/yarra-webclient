@@ -8,8 +8,14 @@ import io
 from yarrapyclient.serverconnection import ServerConnection
 from yarrapyclient.yarraclient import Priority
 from enum import Enum
+from sqlalchemy_utc import utcnow, UtcDateTime 
 
-class yasArchive(db.Model):
+from sqlalchemy.ext.declarative import declarative_base
+from flask_jsontools import JsonSerializableBase
+Base = declarative_base(cls=(JsonSerializableBase,))
+
+
+class yasArchive(db.Model,Base):
     __bind_key__ = 'archive'
     __tablename__ = 'yasArchive'
     id = db.Column(db.Integer, primary_key=True)
@@ -38,7 +44,7 @@ class AssetStatus(enum.Enum):
     down = 1
     unknown = 2
 
-class User(db.Model):
+class User(db.Model,Base):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, nullable=False, unique=True)
     password = db.Column(db.String, nullable=False)
@@ -56,7 +62,7 @@ class User(db.Model):
         return "<User {}>".format(self.username)
 
 class SubmissionStatus(Enum):
-     Initial = 1
+     Pending = 1
      Submitting  = 2
      Submitted   = 3
      Failed   = 4
@@ -64,7 +70,7 @@ class SubmissionStatus(Enum):
      def __str__(self):
         return self.name
 
-class YarraTask(db.Model):
+class YarraTask(db.Model,Base):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User', backref='tasks')
@@ -73,18 +79,19 @@ class YarraTask(db.Model):
 
     scan_file_path =    db.Column(db.String, nullable=False)
     protocol =          db.Column(db.String, nullable=False)
-    patient_name = db.Column(db.String, nullable=False)
-    name = db.Column(db.String, nullable=False)
-    accession = db.Column(db.String, nullable=True)
-    priority = db.Column(db.Enum(Priority))
-    param_value = db.Column(db.Integer)
+    patient_name =      db.Column(db.String, nullable=False)
+    name =              db.Column(db.String, nullable=False)
+    accession =         db.Column(db.String, nullable=True)
+    priority =          db.Column(db.Enum(Priority))
+    param_value =       db.Column(db.Integer)
 
-    extra_files=db.Column(db.PickleType, nullable=True)
+    extra_files =       db.Column(db.PickleType, nullable=True)
     email_notifications=db.Column(db.PickleType, nullable=True)
 
-    submission_status=db.Column(db.Enum(SubmissionStatus), default=SubmissionStatus.Initial)
+    submission_status=  db.Column(db.Enum(SubmissionStatus), default=SubmissionStatus.Pending)
+    created_date =      db.Column(UtcDateTime, default=utcnow)
 
-class YarraServer(db.Model):
+class YarraServer(db.Model,Base):
     id =    db.Column(db.Integer, primary_key=True)
     path =  db.Column(db.String, nullable=False, default="", info={'label':'Path'})
     name =  db.Column(db.String, nullable=False, default="", info={'label':'Name'}, unique=True)
@@ -122,6 +129,7 @@ class YarraServer(db.Model):
                 desc =               info.get('name'),
                 confirmation_mail =  info.get('confirmationmail'),
                 requires_adj_scans = info.getboolean('requiresadjscans'),
+                request_additional_files = info.getboolean('requestadditionalfiles'),
                 requires_acc =       info.getboolean('requiresacc'),
                 disabled =           info.getboolean('disabled'),
                 required_server_type = info.get('requiredservertype'),
@@ -135,7 +143,7 @@ class YarraServer(db.Model):
         ]
 
 
-class ModeModel(db.Model):
+class ModeModel(db.Model,Base):
     id =            db.Column(db.Integer, primary_key=True)
 
     name =          db.Column(db.String,  nullable=False, info={'label':'asd'})
@@ -154,12 +162,13 @@ class ModeModel(db.Model):
     param_min = db.Column(db.Integer)
     param_max = db.Column(db.Integer)
     disabled = db.Column(db.Boolean, default=False)
+    request_additional_files = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return "<"+", ".join(map(str,[self.name,self.desc]))+ ( ' [{}]'.format(self.param_label) if self.param_label else "")+">"
 
 # Define the UserRoles association table
-class ServerRoles(db.Model):
+class ServerRoles(db.Model,Base):
     __tablename__ = 'server_roles'
     id = db.Column(db.Integer(), primary_key=True)
     server_id = db.Column(db.Integer(), db.ForeignKey('yarra_server.id', ondelete='CASCADE'))
@@ -167,7 +176,7 @@ class ServerRoles(db.Model):
 
 
 # Define the Role data-model
-class Role(db.Model):
+class Role(db.Model,Base):
     __tablename__ = 'roles'
     id =   db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(50), unique=True)
@@ -177,78 +186,8 @@ class Role(db.Model):
 
 
 # Define the UserRoles association table
-class UserRoles(db.Model):
+class UserRoles(db.Model,Base):
     __tablename__ = 'user_roles'
     id = db.Column(db.Integer(), primary_key=True)
     user_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete='CASCADE'))
     role_id = db.Column(db.Integer(), db.ForeignKey('roles.id', ondelete='CASCADE'))
-
-class InstructionTemplate(db.Model):
-    id =      db.Column(db.Integer, primary_key=True)
-    name =    db.Column(db.String,  nullable=False,default="",unique=True, info={'label':'Name'})
-    text =    db.Column(db.String,  nullable=False,default="",info={'label':'Text','form_field_class': TextAreaField})
-    assets =  db.relationship('Asset', backref='instruction_template', lazy=True)
-
-    @classmethod
-    def get_id_field(self):
-        return 'name'
-    def get_id(self):
-        return self.name
-
-    def __repr__(self):
-        return '<InstructionTemplate %r>' % self.name
-
-class Asset(db.Model):
-    def generate_shortcode():
-        return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))
-
-    def render_instructions(self):
-        return Template(self.instruction_template.text).render(asset=self)
-
-    id =        db.Column(db.Integer, primary_key=True)
-    name =      db.Column(db.String(80),  unique=True,  nullable=False, default="",info={'label':'Name'})
-    building =  db.Column(db.String(120), unique=False, nullable=False, default="",info={'label':'Building'})
-    location =  db.Column(db.String(120), unique=False, nullable=True, info={'label':'Location'})
-    type =      db.Column(db.String(4),   unique=False, nullable=False, default="",info={'label':'Type'})
-
-    make =      db.Column(db.String(50),  unique=False, nullable=True, info={'label':'Make'})
-    model =     db.Column(db.String(50),  unique=False, nullable=True, info={'label':'Model'})
-    software_version = db.Column(db.String(50),   unique=False, nullable=True, info={'label':'Software version'})
-    serial =    db.Column(db.String(50),  unique=False, nullable=True, info={'label':'Serial'})
-
-    shortcode = db.Column(db.String(10),        unique=True,  nullable=False, default=generate_shortcode)
-    status =    db.Column(db.Enum(AssetStatus), unique=False, nullable=False, default=AssetStatus.up)
-    status_changed = db.Column(db.DateTime, nullable=False, default = datetime.now)
-    events = db.relationship('StatusEvent', backref='asset', lazy=True)
-    instruction_template_id = db.Column(db.Integer, db.ForeignKey('instruction_template.id'), nullable=True)
-    asset_instructions = db.Column(db.String,        unique=False,  nullable=True)
-
-    @classmethod
-    def get_id_field(self):
-        return 'shortcode'
-
-    def get_id(self):
-        return self.shortcode
-
-    def set_status(self,new_status,**kwargs):
-        event = StatusEvent(new_status=new_status, old_status = self.status,asset = self, **kwargs)
-        db.session.add(event)
-        if self.status != new_status:
-            self.status_changed = datetime.now()
-        self.status = new_status
-
-    def __repr__(self):
-        return '<Asset %r>' % self.name
-
-
-class StatusEvent(db.Model):
-    id = 		 db.Column(db.Integer, primary_key=True)
-    timestamp =  db.Column(db.DateTime, nullable=False, default = datetime.now)
-    new_status = db.Column(db.Enum(AssetStatus),nullable=False)
-    old_status = db.Column(db.Enum(AssetStatus),nullable=False)
-    asset_id =   db.Column(db.Integer, db.ForeignKey('asset.id'), nullable=False)
-    details =    db.Column(db.String,nullable=False)
-    submitter =  db.Column(db.String,nullable=False)
-
-    def __repr__(self):
-        return '<StatusEvent %r>' % self.timestamp

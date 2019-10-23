@@ -28,28 +28,6 @@ class RegisterForm(FlaskForm):
     password_confirm = PasswordField('Password (confirm)', validators=[InputRequired(), Length(min=6)])
 
 
-class AssetReportForm(FlaskForm):
-    details =    StringField('Details', validators=[DataRequired(),Length(min=20)])
-    submitter =  StringField('Submitter', validators=[DataRequired()],render_kw={"placeholder": "Your Kerberos ID (ex smithj01)"})
-    new_status = HiddenField('new_status', validators=[DataRequired()])
-
-class InstructionTemplateForm(ModelForm):
-    class Meta:
-        model = InstructionTemplate
-InstructionTemplate.form = InstructionTemplateForm
-
-class AssetEditForm(ModelForm):
-    def __init__(self,*args,**kwargs):
-        super(AssetEditForm, self).__init__(*args,**kwargs)
-        self.instruction_template.query = InstructionTemplate.query
-
-    class Meta:
-        model = Asset
-        exclude = ['status', 'shortcode']
-    instruction_template = QuerySelectField('Instructions template',get_label=lambda x:x.name)
-Asset.form = AssetEditForm
-
-
 class UserForm(ModelForm):
     def __init__(self,*args,**kwargs):
         super(UserForm, self).__init__(*args,**kwargs)

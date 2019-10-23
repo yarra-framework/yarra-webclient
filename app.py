@@ -2,7 +2,9 @@
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash,send_from_directory, jsonify, current_app
 from flask_sqlalchemy import SQLAlchemy
-from datetime import date
+from datetime import date, timezone
+
+
 
 import click
 import flask_login
@@ -18,6 +20,7 @@ import admin
 import login_flow
 import os
 import cli
+from flask_jsontools import DynamicJSONEncoder
 
 def create_app():
     global celery
@@ -38,6 +41,9 @@ def create_app():
     app.register_blueprint(resumable.resumable_upload)
     app.register_blueprint(admin.admin)
     app.register_blueprint(login_flow.login_blueprint)
+    app.jinja_env.trim_blocks = True
+    app.jinja_env.lstrip_blocks = True
+    app.json_encoder = DynamicJSONEncoder
     celery = make_celery(app)
     return app
 
@@ -46,9 +52,21 @@ app = create_app()
 @app.template_filter('dt')
 def _jinja2_filter_datetime(date, fmt=None):
     if fmt:
-        return date.strftime(fmt)
+        return date.astimezone(tz=None).strftime(fmt)
     else:
-        return date.strftime('%m/%d/%Y %H:%M:%S')
+        return date.astimezone(tz=None).strftime('%m/%d/%Y %H:%M:%S %Z')
+
+
+@app.template_filter('active_eq')
+def active_if(a, eq):
+    if a == eq:
+        return "active"
+    return ""
+
+@app.template_filter('each')
+def each(a):
+    return [x.__dict__ for x in a]
+
 
 @app.route('/search')
 @login_required('submitter')
@@ -62,12 +80,12 @@ def search():
                                              yasArchive.ProtocolName.ilike("%{}%".format(needle))
                                              ).order_by(yasArchive.WriteTime.desc()).limit(20).all()
     result = jsonify([dict(id = e.id,
-                           accession=e.AccessionNumber,
-                           patient_name=e.PatientName,
-                           filename=e.Filename,
+                           accession = e.AccessionNumber,
+                           patient_name = e.PatientName,
+                           filename = e.Filename,
                            acquisition_time = e.AcquisitionTime,
                            acquisition_date = e.AcquisitionDate,
-                           protocol = e.ProtocolName) for e in e])
+                           protocol = e.ProtocolName,) for e in e])
     return result
 
 @app.cli.command("test")
@@ -148,10 +166,16 @@ def favicon():
                                'files/favicon.ico')
 
 @app.route('/tasks')
-def tasks():
+@app.route('/tasks/<status>')
+def tasks(status='pending'):
     tasks = flask_login.current_user.user.tasks
+    if status == 'pending':
+        tasks = [ t for t in tasks if t.submission_status in (SubmissionStatus.Submitting, SubmissionStatus.Pending)  ]
+    else:
+        tasks = [ t for t in tasks if t.submission_status==SubmissionStatus[status.title()] ]
+
     tasks.sort(key=lambda x:x.id, reverse=True)
-    return render_template('tasks.html', tasks=tasks)
+    return render_template('tasks.html', tasks=tasks, status=status)
 
 
 
@@ -168,7 +192,9 @@ def index():
              """)).\
         params(id=flask_login.current_user.user.id).all()
 
-    return render_template('submit.html', servers=servers)
+    servers_dict = { s.name: {m.name:m for m in s.modes} for s in servers}
+    print(servers_dict)
+    return render_template('submit.html', servers=servers, servers_dict = servers_dict)
 
 
 

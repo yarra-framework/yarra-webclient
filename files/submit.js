@@ -60,7 +60,8 @@ window.addEventListener('load', function() {
 				$disable_id('files');
 				$id('files').removeAttribute('required');
 				$id('files').value = '';
-			    $s('.custom-file-label')[0].innerHTML = $s('.custom-file-label')[0].getAttribute('default')
+				$id('extra_files').value = '';
+			    $s('.custom-file-label').forEach(e=>e.innerHTML = e.getAttribute('default'))
 			    $disable_id('extra_files');
 			    $enable_id('search_box');
 			}
@@ -101,7 +102,9 @@ window.addEventListener('load', function() {
 	}
 
 
-	const select_server = server =>  
+	const select_server = server => {
+		console.log(server)
+		console.log(servers[server])
 		$s('#modes select').forEach( s => {
 			if (s.id == "mode_"+server) {
 				$show(s);
@@ -112,11 +115,26 @@ window.addEventListener('load', function() {
 				$disable(s);
 			}
 		});
+	}
 
 	$id('server').onchange = e => select_server(e.target.value);
 
 	$s('#modes select').forEach( mode_select => {
 		mode_select.onchange = e => {
+			mode_details = (servers[$id('server').value][e.target.value]);
+			if(mode_details.request_additional_files) {
+				$show_id('extra_files_entry');
+				if (!$id('files').value) {
+					$disable_id('extra_files_entry')
+				} else {
+					$enable_id('extra_files_entry')
+				}
+			} else {
+				$hide_id('extra_files_entry');
+				$id('extra_files').value = '';
+			    $id('extra_files_label').innerHTML = $id('extra_files_label').getAttribute('default')
+			}
+
 			$s('.mode_param_entry').forEach(
 				entry => { 
 					if (entry.id == mode_select.id + "_"+mode_select.value+"_param") {
@@ -250,6 +268,11 @@ function submit_form(){
   }
 
   $id('files').addEventListener("change", function () {
+  		if (this.files.length == 0 ) {
+			$disable_id('extra_files');
+			$id('protocol').value = '';
+			return;
+  		}
 		$id('taskId').value = this.files[0].name.split('.').slice(0, -1).join('.')
 		readHeader(this.files[0], function(header){
 			try {

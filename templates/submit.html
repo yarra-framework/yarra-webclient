@@ -1,10 +1,7 @@
 {%extends "base.html" %}
-
 {% block content %}
 {{ flashes() }}
-
  <form id="form" action="/submit_task" method="post"  class="needs-validation" novalidate>
-
 <nav class="mb-4">
   <div class="nav nav-tabs modes" id="nav-tab" role="tablist" >
     <a class="nav-item nav-link active" id="nav-upload-tab" data-toggle="tab" href="" role="tab" aria-controls="nav-upload" aria-selected="true"><i class="fas fa-upload"></i> Upload File</a>
@@ -25,11 +22,11 @@
 	</div>
   </div>
 
-  <div class="form-group row" id="extra_files_entry">
+  <div class="form-group row d-none" id="extra_files_entry">
     <div class="col-sm-12">
     	<div class= "custom-file">
 			<input type="file" class="form-control custom-file-input" id="extra_files" name="extra_files" multiple disabled/>
-		    <label for="extra_files" class="custom-file-label" >Additional files</label>
+		    <label for="extra_files" id="extra_files_label" class="custom-file-label" default="Additional files" >Additional files</label>
 		</div>
 	</div>
   </div>
@@ -113,8 +110,6 @@
 	    {% endfor %}
   		</div>
    	  </div>
-
-
     {% for server in servers %}
 	{% for mode in server.modes %}
 		{% if mode.param_label %}
@@ -128,11 +123,8 @@
 	       </div>
 		  </div>
     {% endif %}
-
     {% endfor %}
     {% endfor %}
-
-
 	  <div class="form-group row">
 	    <label for="notification" class="col-sm-2 col-form-label">Notification</label>
 	    <div class="col-sm-10">
@@ -191,5 +183,8 @@ for (file_input of document.querySelectorAll('.custom-file input')) {
 		file_input.parentElement.querySelector('.custom-file-label').innerText = files;
 	}
 };
+servers = {{servers_dict|tojson}};
 </script>
+
+
 {% endblock %}
