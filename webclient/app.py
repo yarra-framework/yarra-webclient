@@ -21,19 +21,18 @@ import login_flow
 import os
 import cli
 from flask_jsontools import DynamicJSONEncoder
+import traceback
 
 def create_app():
     global celery
     app = Flask(__name__, static_url_path='', static_folder='files')
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.sqlite'
-
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data/data.sqlite'
     app.config['SQLALCHEMY_BINDS']  = {
-        'archive':        'sqlite:///yas.db',
+        'archive':        'sqlite:///data/yas.db',
     }
-
-
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['YARRA_UPLOAD_BASE_DIR'] = 'tmp'
+
     app.secret_key = "asdfasdfere"
     db.init_app(app) 
     login_manager.init_app(app)
@@ -107,6 +106,14 @@ def test(acc):
     # task.submit()
 
 @celery.task
+def test_task():
+    print("Test!")
+
+@app.cli.command("test_celery")
+def test():
+    test_task.delay()
+
+@celery.task
 def background_submit(task_id):
     yarra_task = db.session.query(YarraTask).get(task_id)
     try:
@@ -117,7 +124,8 @@ def background_submit(task_id):
         t.submit()
         yarra_task.submission_status = SubmissionStatus.Submitted
         db.session.commit()
-    except:
+    except Exception as e:
+        traceback.print_exc()
         yarra_task.submission_status = SubmissionStatus.Failed
     finally:
         db.session.commit()
@@ -141,7 +149,7 @@ def submit(task_id,priority):
     if mode is None:
         print("Invalid mode / server combination")
         return
-    yarra_task = YarraTask(mode=mode, scan_file_path='test.dat', protocol='theProtocol', patient_name='John Doe',name=task_id,accession=None, priority=priority,extra_files=['extra1.dat','extra2.dat'])
+    yarra_task = YarraTask(user_id=1,mode=mode, scan_file_path='test.dat', protocol='theProtocol', patient_name='John Doe',name=task_id,accession=None, priority=priority,extra_files=['extra1.dat','extra2.dat'])
     db.session.add(yarra_task)
     db.session.commit()
     background_submit.delay(yarra_task.id)
@@ -167,6 +175,7 @@ def favicon():
 
 @app.route('/tasks')
 @app.route('/tasks/<status>')
+@login_required()
 def tasks(status='pending'):
     tasks = flask_login.current_user.user.tasks
     if status == 'pending':
@@ -231,8 +240,8 @@ def submit_task(): # todo: prevent submissions to incorrect servers
         priority = Priority.High
 
     yarra_task = YarraTask(
-                user = flask_login.current_user.user,
-                mode=mode,
+                 user =         flask_login.current_user.user,
+                 mode =         mode,
                  scan_file_path=filepath, 
                  protocol =     request.form.get('protocol'),
                  patient_name = request.form.get('patient_name'),

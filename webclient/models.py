@@ -35,7 +35,6 @@ class yasArchive(db.Model,Base):
     AccessionNumber = db.Column(db.String, nullable=False) 
     YarraServer = db.Column(db.String, nullable=False) 
 
-
     def __repr__(self):
         return "<yas {} {}>".format(self.AccessionNumber, self.ProtocolName)
 
@@ -89,7 +88,7 @@ class YarraTask(db.Model,Base):
     email_notifications=db.Column(db.PickleType, nullable=True)
 
     submission_status=  db.Column(db.Enum(SubmissionStatus), default=SubmissionStatus.Pending)
-    created_date =      db.Column(UtcDateTime, default=utcnow)
+    created_date =      db.Column(UtcDateTime, default=utcnow())
 
 class YarraServer(db.Model,Base):
     id =    db.Column(db.Integer, primary_key=True)

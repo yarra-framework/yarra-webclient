@@ -15,20 +15,26 @@ from flask import json
 
 from celery import Celery
 
+import os
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379'),
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379')
+
 def make_celery(app):
-    celery = Celery('app')#, broker=app.config['CELERY_BROKER_URL'])
-    celery.conf.update({
-        'broker_url': 'filesystem://',
-        'broker_transport_options': {
-            'data_folder_in': 'broker/out',
-            'data_folder_out': 'broker/out',
-            'data_folder_processed': 'broker/processed'
-        },
-        # 'imports': ('tasks',),
-        'result_persistent': False,
-        'task_serializer': 'json',
-        'result_serializer': 'json',
-        'accept_content': ['json']})
+    celery = Celery('app', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
+
+    # celery = Celery('app')#, broker=app.config['CELERY_BROKER_URL'])
+    # celery.conf.update({
+    #     'broker_url': 'filesystem://',
+    #     'broker_transport_options': {
+    #         'data_folder_in': 'broker/out',
+    #         'data_folder_out': 'broker/out',
+    #         'data_folder_processed': 'broker/processed'
+    #     },
+    #     # 'imports': ('tasks',),
+    #     'result_persistent': False,
+    #     'task_serializer': 'json',
+    #     'result_serializer': 'json',
+    #     'accept_content': ['json']})
 
     # celery.conf.update(app.config)
     TaskBase = celery.Task
