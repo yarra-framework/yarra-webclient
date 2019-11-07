@@ -14,6 +14,8 @@ class ObjectView(View):
 
     def dispatch_request(self,identifier,method):
         assets = self.Model.query.all()
+        if len(assets)==0:
+            method = 'new'
 
         if method == 'new':
             asset = self.Model()

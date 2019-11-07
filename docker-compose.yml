@@ -1,43 +1,37 @@
 version: '2'
 
+x-webclient-service: &webclient-service
+  image: yarra-webclient:latest
+  environment:
+    PYTHONUNBUFFERED: 'true'
+  depends_on:
+    - postgres
+    - redis
+  restart: always
+  volumes:
+    - 'data:/app/webclient/data'
+    - '/media/archive:/archive'
+   
 services:
   yarra-webclient:
-    image: yarra-webclient:latest
-    build: .
-    environment:
-      PYTHONUNBUFFERED: 'true'
-    volumes:
-      - 'data:/app/webclient/data'
-      - '/media/archive:/archive'
-    command: >
-      gunicorn -b 0.0.0.0:6060
-        --access-logfile -
-        --reload
-        "app:app"
-    expose: 
-        - "6060"
+    <<: *webclient-service
     depends_on:
       - celery
-  nginx:
-    depends_on: 
-      - yarra-webclient
-    image: nginxinc/nginx-unprivileged
-    volumes:
-      - ./default.conf:/etc/nginx/conf.d/default.conf
-      - ./webclient/files:/usr/src/app/static
-    ports:
-     - "6060:6060"
-    links:
-     - yarra-webclient:web
+    expose:
+     - "8000"
   celery:
-    image: yarra-webclient:latest
-    build: .
+    <<: *webclient-service
     command: celery worker --app=app.celery --concurrency=2 --loglevel=INFO
-    volumes:
-      - 'data:/app/webclient/data'
-      - '/media/archive:/archive'
     depends_on:
       - redis
+  nginx:
+    image: yarranyu/webclient-nginx:latest
+    ports:
+     - "6060:8080"
+    depends_on: 
+      - yarra-webclient
+    links:
+     - yarra-webclient:web
   tasker:
       image: strm/tasker
       volumes:
@@ -54,7 +48,7 @@ services:
                tasks:
                    docker:
                        - name: indexer
-                         image: yarra-indexer:latest
+                         image: yarranyu/archive-indexer:0.1b11
                          entrypoint: ./YASIndexer
                          volumes:
                           - 'data:/data'

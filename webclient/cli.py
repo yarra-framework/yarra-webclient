@@ -52,19 +52,16 @@ def init_db():
     db.session.add(admin_role)
     submit_role = Role(name="submitter")
     db.session.add(submit_role)
-    test_user = User(username="roy", email="***REMOVED***", password=pwd_context.hash("roy"),roles=[admin_role,submit_role])
-    db.session.add(test_user)
-    tobias = User(username="tobias", email='***REMOVED***', password=pwd_context.hash("tobias"),roles=[admin_role,submit_role])
-    db.session.add(tobias)
+    initial_admin = User(username="admin", email="admin@yarra.rocks", password=pwd_context.hash("admin"),roles=[admin_role,submit_role])
+    db.session.add(initial_admin)
+    
+    # servers = [YarraServer(name='***REMOVED***',username='yarra',path='***REMOVED***', roles=[submit_role]), 
+    #             YarraServer(name='***REMOVED***',username='yarra',path='***REMOVED***',roles=[admin_role])]
 
-
-    servers = [YarraServer(name='***REMOVED***',username='yarra',path='***REMOVED***', roles=[submit_role]), 
-                YarraServer(name='***REMOVED***',username='yarra',path='***REMOVED***',roles=[admin_role])]
-
-    for s in servers:
-        s.password = '***REMOVED***'
-        s.update_modes()
-        db.session.add(s)
+    # for s in servers:
+    #     s.password = '***REMOVED***'
+    #     s.update_modes()
+    #     db.session.add(s)
 
     db.session.commit()
 
