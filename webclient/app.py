@@ -33,7 +33,7 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['YARRA_UPLOAD_BASE_DIR'] = 'tmp'
 
-    app.config['YARRA_ARCHIVE_UPLOAD'] = True
+    app.config['YARRA_ARCHIVE_UPLOAD'] = os.environ.get("YARRA_ARCHIVE_UPLOAD", 'False').lower() == 'true'
 
     app.secret_key = "asdfasdfere"
     db.init_app(app) 

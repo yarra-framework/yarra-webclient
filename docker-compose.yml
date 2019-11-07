@@ -4,9 +4,10 @@ x-webclient-service: &webclient-service
   image: yarra-webclient:latest
   environment:
     PYTHONUNBUFFERED: 'true'
+    YARRA_ARCHIVE_UPLOAD: 'false'
   volumes:
     - 'data:/app/webclient/data'
-    - '/media/archive:/archive'   
+#    - '/media/archive:/archive'   
 services:
   yarra-webclient:
     <<: *webclient-service
@@ -29,8 +30,8 @@ services:
      - yarra-webclient:web
   redis:
     image: redis
-  tasker:
-      image: strm/tasker
+  archive-index-task: # disable this if you don't have a raw data archive
+      image: strm/tasker 
       volumes:
           - "/var/run/docker.sock:/var/run/docker.sock"
       environment:
