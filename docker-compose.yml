@@ -4,14 +4,9 @@ x-webclient-service: &webclient-service
   image: yarra-webclient:latest
   environment:
     PYTHONUNBUFFERED: 'true'
-  depends_on:
-    - postgres
-    - redis
-  restart: always
   volumes:
     - 'data:/app/webclient/data'
-    - '/media/archive:/archive'
-   
+    - '/media/archive:/archive'   
 services:
   yarra-webclient:
     <<: *webclient-service
@@ -32,6 +27,8 @@ services:
       - yarra-webclient
     links:
      - yarra-webclient:web
+  redis:
+    image: redis
   tasker:
       image: strm/tasker
       volumes:
@@ -53,7 +50,5 @@ services:
                          volumes:
                           - 'data:/data'
                           - '/media/archive:/archive'
-  redis:
-    image: redis
 volumes:
   data:

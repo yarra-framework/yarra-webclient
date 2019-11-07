@@ -33,6 +33,8 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['YARRA_UPLOAD_BASE_DIR'] = 'tmp'
 
+    app.config['YARRA_ARCHIVE_UPLOAD'] = True
+
     app.secret_key = "asdfasdfere"
     db.init_app(app) 
     login_manager.init_app(app)
@@ -219,6 +221,8 @@ def submit_task(): # todo: prevent submissions to incorrect servers
             return abort(400, "Missing field: '{}' is empty.".format(k))
 
     if request.form.get('archive_id'):
+        if not app.config['YARRA_ARCHIVE_UPLOAD']:
+            return abort(400, "Invalid")
         archive_object = db.session.query(yasArchive).filter(yasArchive.id == request.form.get('archive_id')).scalar()
         path = os.path.join(archive_object.Path.replace('V:/Archive/','/media/archive/'))
         filepath = os.path.join(path, archive_object.Filename)
