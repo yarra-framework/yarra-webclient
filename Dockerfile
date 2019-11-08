@@ -27,5 +27,4 @@ RUN chown -R appuser /app
 
 USER appuser
 
-
 CMD ["gunicorn","app:app"]

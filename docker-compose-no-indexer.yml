@@ -1,0 +1,5 @@
+version: '2'
+
+services:
+    archive-index-task:
+      image: tianon/true

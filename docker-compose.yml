@@ -7,9 +7,10 @@ x-webclient-service: &webclient-service
     YARRA_ARCHIVE_UPLOAD: 'false'
   volumes:
     - 'data:/app/webclient/data'
-#    - '/media/archive:/archive'   
+    - '/media/archive:/archive'   
 services:
   yarra-webclient:
+    build: .
     <<: *webclient-service
     depends_on:
       - celery
@@ -17,7 +18,12 @@ services:
      - "8000"
   celery:
     <<: *webclient-service
-    command: celery worker --app=app.celery --concurrency=2 --loglevel=INFO
+    command: celery worker --app=app.celery --concurrency=2 --loglevel=WARN
+    depends_on:
+      - redis
+  celery-beat:
+    <<: *webclient-service
+    command: celery beat --app=app.celery --loglevel=WARN
     depends_on:
       - redis
   nginx:
@@ -30,6 +36,8 @@ services:
      - yarra-webclient:web
   redis:
     image: redis
+    expose: 
+      - "6739"
   archive-index-task: # disable this if you don't have a raw data archive
       image: strm/tasker 
       volumes:

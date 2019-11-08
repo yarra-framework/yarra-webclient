@@ -22,6 +22,7 @@
         YarraWebClient
         </a>
         {% block header %}
+{% if current_user.is_authenticated %}
 {% if current_user.is_admin %}
   <ul class="navbar-nav float-right">
   <li class="nav-item float-right">
@@ -33,7 +34,8 @@
   <li class="nav-item float-right">
   <a class="nav-link" href="{{ url_for('tasks')}}"><i class="fas fa-tasks"></i> Tasks</a>
   </li>
-</ul>
+  </ul>
+{% endif %}
 
         {% endblock %}
         {% if current_user.is_authenticated %}

@@ -3,9 +3,6 @@ from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash,send_from_directory, jsonify, current_app
 from flask_sqlalchemy import SQLAlchemy
 from datetime import date, timezone
-
-
-
 import click
 import flask_login
 from extensions import db, login_manager, login_required, json_errors, make_celery
@@ -37,6 +34,10 @@ def create_app():
 
     app.secret_key = "asdfasdfere"
     db.init_app(app) 
+    try: 
+        db.create_all()
+    except:
+        pass
     login_manager.init_app(app)
     cli.init_app(app)
     app.register_blueprint(resumable.resumable_upload)
@@ -107,9 +108,16 @@ def test(acc):
     # print(task.task_data.to_config())
     # task.submit()
 
+
 @celery.task
-def test_task():
-    print("Test!")
+def update_server_modes():
+    for s in db.session.query(YarraServer).all():
+        s.update_modes()
+    db.session.commit()
+
+@celery.on_after_configure.connect
+def setup_periodic_tasks(sender, **kwargs):
+    sender.add_periodic_task(60.0*60.0, update_server_modes.s(), name='update server modes')
 
 @app.cli.command("test_celery")
 def test():
