@@ -4,18 +4,17 @@ x-webclient-service: &webclient-service
   image: yarra-webclient:latest
   environment:
     PYTHONUNBUFFERED: 'true'
-    YARRA_ARCHIVE_UPLOAD: 'false'
+    YARRA_ARCHIVE_UPLOAD: 'true'
   volumes:
     - 'data:/app/webclient/data'
-    - '/media/archive:/archive'   
+    - '/media/archive:/archive'   # disable this if you don't have a raw data archive
 services:
   yarra-webclient:
-    build: .
     <<: *webclient-service
     depends_on:
       - celery
     expose:
-     - "8000"
+      - "8000"
   celery:
     <<: *webclient-service
     command: celery worker --app=app.celery --concurrency=2 --loglevel=WARN
@@ -29,11 +28,11 @@ services:
   nginx:
     image: yarranyu/webclient-nginx:latest
     ports:
-     - "6060:8080"
+      - "6060:8080"
     depends_on: 
       - yarra-webclient
     links:
-     - yarra-webclient:web
+      - yarra-webclient:web
   redis:
     image: redis
     expose: 

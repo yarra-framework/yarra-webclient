@@ -1,5 +1,10 @@
 version: '2'
 
+x-webclient-service: &webclient-service
+  environment:
+    YARRA_ARCHIVE_UPLOAD: 'false'
+  volumes:
+    - 'data:/app/webclient/data'
 services:
     archive-index-task:
       image: tianon/true
