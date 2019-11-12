@@ -4,10 +4,9 @@ x-webclient-service: &webclient-service
   image: yarra-webclient:latest
   environment:
     PYTHONUNBUFFERED: 'true'
-    YARRA_ARCHIVE_UPLOAD: 'true'
+    YARRA_ARCHIVE_UPLOAD: 'false'
   volumes:
     - 'data:/app/webclient/data'
-    - '/media/archive:/archive'   # disable this if you don't have a raw data archive
 services:
   yarra-webclient:
     <<: *webclient-service
@@ -37,26 +36,5 @@ services:
     image: redis
     expose: 
       - "6739"
-  archive-index-task: # disable this if you don't have a raw data archive
-      image: strm/tasker 
-      volumes:
-          - "/var/run/docker.sock:/var/run/docker.sock"
-      environment:
-           configuration: |
-               logging:
-                  level:
-                    ROOT: WARN
-                    org.springframework.web: WARN
-               schedule:
-                   - every: day
-                     task: indexer
-               tasks:
-                   docker:
-                       - name: indexer
-                         image: yarranyu/archive-indexer:0.1b11
-                         entrypoint: ./YASIndexer
-                         volumes:
-                          - 'data:/data'
-                          - '/media/archive:/archive'
 volumes:
   data:
