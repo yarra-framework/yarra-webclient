@@ -5,6 +5,7 @@ from extensions import login_required, db
 from models import User, Role, YarraServer, ModeModel
 from flask.views import View
 from forms import NewForm, LoginForm
+from extensions import pwd_context
 
 class ObjectView(View):
     def __init__(self, asset_model,view_func):
@@ -49,6 +50,11 @@ class ObjectView(View):
                 flash('Submitted.','primary')
                 return redirect(request.referrer)
         return render_template('asset-edit.html',admin_views=admin_views,asset=asset,assets=assets,form=form,new_form=NewForm(),view_func=self.view_func)
+
+class UserView(ObjectView):
+    def on_updated(self,asset):
+            asset.password = pwd_context.hash(asset.password)
+
 
 class ServerView(ObjectView):
     def on_updated(self,asset):

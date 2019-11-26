@@ -4,3 +4,4 @@ mnt.sh
 test.dat
 venv/*
 *.sqlite
+*.db

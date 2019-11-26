@@ -1,14 +1,14 @@
 version: '2'
 
 x-webclient-service: &webclient-service
-  image: yarra-webclient:latest
+  image: yarranyu/yarra-webclient:latest
   environment:
     PYTHONUNBUFFERED: 'true'
     YARRA_ARCHIVE_UPLOAD: 'false'
   volumes:
     - 'data:/app/webclient/data'
 services:
-  yarra-webclient:
+  web:
     <<: *webclient-service
     depends_on:
       - celery
@@ -29,9 +29,7 @@ services:
     ports:
       - "6060:8080"
     depends_on: 
-      - yarra-webclient
-    links:
-      - yarra-webclient:web
+      - web
   redis:
     image: redis
     expose: 

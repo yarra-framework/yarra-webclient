@@ -1,5 +1,5 @@
 
-REPO = yarra-webclient
+REPO = yarranyu/yarra-webclient
 VERSION ?= latest
 
 build:
@@ -8,7 +8,10 @@ build:
 run: build
 	docker run ${REPO}
 
+push: build
+	docker push  $(REPO):$(VERSION)
+
 test:
-	parallel -j0 --lb ::: 'celery worker --app=src.app.celery --concurrency=1 --loglevel=INFO' 'flask run'
+	parallel -j0 --lb ::: 'celery worker --app=webclient.app.celery --concurrency=1 --loglevel=INFO' 'cd webclient && flask run'
 
 default: build

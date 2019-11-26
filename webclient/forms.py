@@ -27,6 +27,10 @@ class RegisterForm(FlaskForm):
     password = PasswordField('Password', validators=[InputRequired(),Length(min=6),EqualTo('password_confirm',message='Passwords must match')])
     password_confirm = PasswordField('Password (confirm)', validators=[InputRequired(), Length(min=6)])
 
+class PasswordChangeForm(FlaskForm):
+    password = PasswordField('Password', validators=[InputRequired(),Length(min=6),EqualTo('password_confirm',message='Passwords must match')])
+    password_confirm = PasswordField('Password (confirm)', validators=[InputRequired(), Length(min=6)])
+
 
 class UserForm(ModelForm):
     def __init__(self,*args,**kwargs):

@@ -1,8 +1,6 @@
 FROM ubuntu:18.04
 
-RUN apt-get update 
-
-RUN apt-get install -y python3-pip && pip3 install --upgrade pip
+RUN apt-get update && apt-get install -y python3-pip && pip3 install --upgrade pip
 
 WORKDIR app
 COPY requirements.txt .
@@ -19,10 +17,10 @@ ENV GUNICORN_CMD_ARGS="--bind=0.0.0.0:8000  --access-logfile -"
 
 WORKDIR webclient
 
-
 RUN groupadd -g 999 appuser && \
     useradd -r -u 999 -g appuser appuser
 
+RUN mkdir data
 RUN chown -R appuser /app
 
 USER appuser

@@ -1,5 +1,5 @@
 from models import User
-from forms import LoginForm, RegisterForm
+from forms import LoginForm, RegisterForm, PasswordChangeForm
 from extensions import login_manager
 from extensions import pwd_context
 from extensions import db
@@ -44,6 +44,19 @@ def request_loader(request):
     user.is_authenticated = pwd_context.verify(request.form['password'], user.password)
     return user
 
+@login_blueprint.route('/password_change', methods=['GET', 'POST'])
+def password_change():
+    if not flask_login.current_user.is_authenticated:
+        return redirect('/')
+    form = PasswordChangeForm()
+    if request.method == 'POST' and form.validate():
+        flask_login.current_user.user.password = pwd_context.hash(form.password.data)
+        db.session.commit()
+        flash('Password updated')
+        return redirect('/')
+    return render_template('login.html',form=form)
+
+
 @login_blueprint.route('/register', methods=['GET', 'POST'])
 def register():
     if flask_login.current_user.is_authenticated:
@@ -62,6 +75,8 @@ def register():
 def login():
     form = LoginForm()
     if request.method == 'GET':
+        if flask_login.current_user.is_authenticated:
+            return redirect('/')
         return render_template('login.html',form=form)
 
     next = request.args.get('next')
