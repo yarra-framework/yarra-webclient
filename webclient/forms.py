@@ -28,8 +28,9 @@ class RegisterForm(FlaskForm):
     password_confirm = PasswordField('Password (confirm)', validators=[InputRequired(), Length(min=6)])
 
 class PasswordChangeForm(FlaskForm):
-    password = PasswordField('Password', validators=[InputRequired(),Length(min=6),EqualTo('password_confirm',message='Passwords must match')])
-    password_confirm = PasswordField('Password (confirm)', validators=[InputRequired(), Length(min=6)])
+    old_password = PasswordField('Current password', validators=[InputRequired()])
+    password = PasswordField('New password', validators=[InputRequired(),Length(min=6),EqualTo('password_confirm',message='Passwords must match')])
+    password_confirm = PasswordField('New password confirmation', validators=[InputRequired(), Length(min=6)])
 
 
 class UserForm(ModelForm):

@@ -4,4 +4,5 @@
 {% block content %}
   {{ flashes() }}
   {{ render_form(form) }}  
+No account? <a href="{{url_for('login.register')}}">Register here</a>
 {% endblock %}

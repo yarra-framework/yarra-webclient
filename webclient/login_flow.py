@@ -50,11 +50,14 @@ def password_change():
         return redirect('/')
     form = PasswordChangeForm()
     if request.method == 'POST' and form.validate():
-        flask_login.current_user.user.password = pwd_context.hash(form.password.data)
-        db.session.commit()
-        flash('Password updated')
-        return redirect('/')
-    return render_template('login.html',form=form)
+        if pwd_context.verify(form.old_password.data, flask_login.current_user.user.password):
+            flask_login.current_user.user.password = pwd_context.hash(form.password.data)
+            db.session.commit()
+            flash('Password updated','success')
+            return redirect('/')
+        else:
+            flash('Current password incorrect','danger')
+    return render_template('users/password_change.html',form=form)
 
 
 @login_blueprint.route('/register', methods=['GET', 'POST'])
@@ -68,7 +71,7 @@ def register():
         db.session.commit()
         flash('Registration recieved')
         return redirect(url_for('login.login'))
-    return render_template('login.html',form=form)
+    return render_template('users/register.html',form=form)
     # return redirect(request.referrer)
 
 @login_blueprint.route('/login', methods=['GET', 'POST'])
@@ -77,7 +80,7 @@ def login():
     if request.method == 'GET':
         if flask_login.current_user.is_authenticated:
             return redirect('/')
-        return render_template('login.html',form=form)
+        return render_template('users/login.html',form=form)
 
     next = request.args.get('next')
     username = form.username.data
@@ -88,7 +91,7 @@ def login():
         flask_login.login_user(login_user)
         return redirect(next or url_for('admin.user_edit'))
 
-    flash('Bad login','danger')
+    flash('Unknown username or incorrect password','danger')
     return redirect(request.referrer)
 
 @login_blueprint.route('/logout')
