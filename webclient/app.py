@@ -74,21 +74,21 @@ def each(a):
 @login_required('submitter')
 def search():
     needle = request.args.get('needle')
+    offset = int(request.args.get('offset') or 0)
     if not needle: return jsonify([])
     if needle.find("+")==-1:
         e = db.session.query(yasArchive).filter((yasArchive.AccessionNumber == needle) |
                                                  yasArchive.PatientName.ilike("%{}%".format(needle)) |
                                                  yasArchive.Filename.ilike("%{}%".format(needle)) | 
                                                  yasArchive.ProtocolName.ilike("%{}%".format(needle))
-                                                 ).order_by(yasArchive.WriteTime.desc()).limit(20).all()
+                                                 ).order_by(yasArchive.WriteTime.desc()).offset(offset).limit(20).all()
     else:
         needles = [n.strip() for n in needle.split("+")]
-        print(needles[0])
-        e = db.session.query(yasArchive).from_statement(  # filtering servers by ones assigned to the same role as the user
+        e = db.session.query(yasArchive).from_statement(
             text("""SELECT yasArchive.* FROM yasArchive
                 where {}
                   order by WriteTime desc
-                  limit 20
+                  limit 20 offset :offset
                   """.format(
                     " and ".join(["""(
                         PatientName like '%'||:needle{} ||'%' COLLATE NOCASE OR
@@ -96,7 +96,7 @@ def search():
                         Filename like '%'||:needle{} ||'%' COLLATE NOCASE
                         )""".format(i,i,i) for i in range(len(needles))])
                     ))).\
-                params({'needle{}'.format(i):needles[i] for i in range(len(needles))}).all()
+                params({'offset':offset,**{'needle{}'.format(i):needles[i] for i in range(len(needles))}}).all()
 
 
     result = jsonify([dict(id = e.id,

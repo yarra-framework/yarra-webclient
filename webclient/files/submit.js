@@ -32,6 +32,8 @@ var pick_case = (id, patient, protocol, date, acc, filename) => {
 
 var archive_case = null
 var submit_mode = "upload"
+var search_offset = 0
+var search_page_length = 20
 window.addEventListener('load', function() {
     const form = $id('form');
 	const progress = $id('progress');
@@ -68,23 +70,13 @@ window.addEventListener('load', function() {
 
 		})
 
-
-	$id('search_btn').onclick = function(e) {
-	    e.preventDefault();
-	    e.stopPropagation();
-	    search_box = $id('search_box');
-	    if (search_box.getAttribute('readonly')) {
-	    	search_box.removeAttribute('readonly');
-	    	$set_html('search_btn','Search');
-			$disable_id('submit_btn');
-	    	search_box.value = '';
-	    	archive_case = null;
-	    	return;
-	    }
-	    url = "/search?needle="+encodeURIComponent(search_box.value)
+	var search = function(needle, offset) {
+	    url = "/search?needle="+encodeURIComponent(needle)+"&offset="+offset||0
 		fetch(url, {
 			    method: 'get',
-			}).then(r=>r.json()).then( r => {$set_html('search_results',`
+			}).then(r=>r.json()).then( r => {
+				search_page_length = r.length;
+				$set_html('search_results',`
 		<tbody>
 		    ${$cat(r, a => `<tr><td>${a.patient_name}</td>
 		    	 <td>${a.accession}</td> <td>${a.protocol}</td> 
@@ -101,6 +93,29 @@ window.addEventListener('load', function() {
 		})
 	}
 
+	$id('search_btn').onclick = function(e) {
+	    e.preventDefault();
+	    e.stopPropagation();
+	    search_box = $id('search_box');
+	    if (search_box.getAttribute('readonly')) {
+	    	search_box.removeAttribute('readonly');
+	    	$set_html('search_btn','Search');
+			$disable_id('submit_btn');
+	    	search_box.value = '';
+	    	archive_case = null;
+	    	return;
+	    }
+	    search_offset = 0
+	    search(search_box.value,0)
+	}
+$id('search_next_btn').onclick = function(e) {
+	    e.preventDefault();
+	    e.stopPropagation();
+	    search_box = $id('search_box');
+	    search_offset += search_page_length;
+
+	    search(search_box.value, search_offset)
+	}
 
 	const select_server = server => {
 		console.log(server)
