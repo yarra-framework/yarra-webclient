@@ -7,6 +7,7 @@ x-webclient-service: &webclient-service
     YARRA_ARCHIVE_UPLOAD: 'false'
   volumes:
     - 'data:/app/webclient/data'
+    - 'temp:/tmp'
 services:
   web:
     <<: *webclient-service
@@ -36,3 +37,4 @@ services:
       - "6739"
 volumes:
   data:
+  temp:
