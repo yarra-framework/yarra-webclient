@@ -81,7 +81,7 @@ window.addEventListener('load', function() {
 	    	archive_case = null;
 	    	return;
 	    }
-	    url = "/search?needle="+(search_box.value)
+	    url = "/search?needle="+encodeURIComponent(search_box.value)
 		fetch(url, {
 			    method: 'get',
 			}).then(r=>r.json()).then( r => {$set_html('search_results',`
