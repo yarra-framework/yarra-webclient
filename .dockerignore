@@ -9,3 +9,4 @@ mnt
 tmp
 **/*.sqlitebrowser
 **/*.sqlite
+webclient/data

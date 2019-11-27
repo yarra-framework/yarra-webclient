@@ -51,8 +51,8 @@ def resumable():
 def resumable_post():
     resumableTotalChunks = request.form.get('resumableTotalChunks', type=int)
     resumableChunkNumber = request.form.get('resumableChunkNumber', default=1, type=int)
-    resumableFilename = request.form.get('resumableFilename', default='error', type=str)
-    resumableIdentifier = request.form.get('resumableIdentifier', default='error', type=str)
+    resumableFilename =    request.form.get('resumableFilename', default='error', type=str)
+    resumableIdentifier =  request.form.get('resumableIdentifier', default='error', type=str)
 
     # get the chunk data
     chunk_data = request.files['file']

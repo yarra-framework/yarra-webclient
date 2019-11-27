@@ -28,7 +28,7 @@ def create_app():
         'archive':        'sqlite:///data/yas.db',
     }
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['YARRA_UPLOAD_BASE_DIR'] = 'tmp'
+    app.config['YARRA_UPLOAD_BASE_DIR'] = '/tmp'
 
     app.config['YARRA_ARCHIVE_UPLOAD'] = os.environ.get("YARRA_ARCHIVE_UPLOAD", 'False').lower() == 'true'
 

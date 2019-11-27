@@ -7,3 +7,6 @@ build:
 
 run: build
 	docker run ${REPO}
+
+push: build
+	docker push  $(REPO):$(VERSION)

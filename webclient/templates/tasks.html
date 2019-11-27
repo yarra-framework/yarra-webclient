@@ -29,9 +29,9 @@
 
 <nav class="mb-4">
   <div class="nav nav-tabs modes" id="nav-tab" role="tablist" >
-    <a class="nav-item nav-link {{status|active_eq('pending')}}" id="nav-upload-tab" data-toggle="tab" href="{{url_for('tasks',status='pending')}}" role="tab" aria-controls="nav-upload" aria-selected="true"><i class="fas fa-sync"></i> In Progress</a>
-    <a class="nav-item nav-link  {{status|active_eq('submitted')}}" id="nav-archive-tab" data-toggle="tab" href="{{url_for('tasks',status='submitted')}}" role="tab" aria-controls="nav-archive" aria-selected="false"><i class="fas fa-check"></i> Submitted</a>
-    <a class="nav-item nav-link  {{status|active_eq('failed')}}" id="nav-archive-tab" data-toggle="tab" href="{{url_for('tasks',status='failed')}}" role="tab" aria-controls="nav-archive" aria-selected="false"><i class="fas fa-times"></i> Failed</a>
+    <a class="nav-item nav-link {{status|active_eq('pending')}}" id="nav-upload-tab" href="{{url_for('tasks',status='pending')}}" role="tab" aria-controls="nav-upload" aria-selected="true"><i class="fas fa-sync"></i> In Progress</a>
+    <a class="nav-item nav-link  {{status|active_eq('submitted')}}" id="nav-archive-tab" href="{{url_for('tasks',status='submitted')}}" role="tab" aria-controls="nav-archive" aria-selected="false"><i class="fas fa-check"></i> Submitted</a>
+    <a class="nav-item nav-link  {{status|active_eq('failed')}}" id="nav-archive-tab" href="{{url_for('tasks',status='failed')}}" role="tab" aria-controls="nav-archive" aria-selected="false"><i class="fas fa-times"></i> Failed</a>
   </div>
 </nav>
 
