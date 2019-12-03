@@ -76,20 +76,43 @@ window.addEventListener('load', function() {
 			    method: 'get',
 			}).then(r=>r.json()).then( r => {
 				search_page_length = r.length;
+				if ( r.length == 0 ) {
+					if (offset == 0) {
+						$set_html('search_results', "<tbody><tr><td>No results found!</tr></td></tbody>")
+						$hide_id('search_prev_btn');
+					} else {
+						$set_html('search_results', "<tbody><tr><td>No more results found!</tr></td></tbody>")
+						$show_id('search_prev_btn');
+					}
+					$hide_id('search_next_btn');
+					$show_id('search_results_box');
+					return
+				}
 				$set_html('search_results',`
-		<tbody>
-		    ${$cat(r, a => `<tr><td>${a.patient_name}</td>
-		    	 <td>${a.accession}</td> <td>${a.protocol}</td> 
-		    	 <td>${a.acquisition_date}&nbsp;${a.acquisition_time}</td>
-		    	 <td>
-					<div class="form-check form-check-inline mt-2">
-					  <button class="btn btn-primary" 
-					  	onclick="event.preventDefault(); pick_case(${a.id},'${a.patient_name}','${a.protocol}', '${a.acquisition_date}', '${a.accession}','${a.filename}');">Select</button>
-					</div>
-				 </td>
-		    	 </tr>`)}
-		</tbody>`);
-		$show_id('search_results_box');
+				<tbody>
+				    ${$cat(r, a => `<tr><td>${a.patient_name}</td>
+				    	 <td>${a.accession}</td> <td>${a.protocol}</td> 
+				    	 <td>${a.acquisition_date}&nbsp;${a.acquisition_time}</td>
+				    	 <td>
+							<div class="form-check form-check-inline mt-2">
+							  <button class="btn btn-primary" 
+							  	onclick="event.preventDefault(); pick_case(${a.id},'${a.patient_name}','${a.protocol}', '${a.acquisition_date}', '${a.accession}','${a.filename}');">Select</button>
+							</div>
+						 </td>
+				    	 </tr>`)}
+				</tbody>`);
+				if (offset > 0) {
+					$show_id('search_prev_btn');
+				} else {
+					$hide_id('search_prev_btn');
+				}
+				if (r.length == 20) {
+					$show_id('search_next_btn');
+				} else {
+					$hide_id('search_next_btn');
+				
+				}
+				$show_id('search_results_box');
 		})
 	}
 
@@ -113,6 +136,14 @@ $id('search_next_btn').onclick = function(e) {
 	    e.stopPropagation();
 	    search_box = $id('search_box');
 	    search_offset += search_page_length;
+
+	    search(search_box.value, search_offset)
+	}
+$id('search_prev_btn').onclick = function(e) {
+	    e.preventDefault();
+	    e.stopPropagation();
+	    search_box = $id('search_box');
+	    search_offset -= 20;
 
 	    search(search_box.value, search_offset)
 	}

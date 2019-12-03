@@ -27,6 +27,9 @@ class ObjectView(View):
             return redirect(url_for('admin.'+self.view_func,identifier=assets[0].get_id(), method=method))
         else:
             asset = self.Model.query.filter_by(**{self.Model.get_id_field():identifier}).first()
+
+        if not asset:
+            return redirect(url_for('admin.'+self.view_func,identifier=assets[0].get_id(), method=method))
         form = self.Form(obj=asset)
 
         if request.method == 'POST':
@@ -54,7 +57,12 @@ class ObjectView(View):
 class UserView(ObjectView):
     def on_updated(self,asset):
             asset.password = pwd_context.hash(asset.password)
-
+    
+    def dispatch_request(self,identifier,method):
+        if method == 'delete' and identifier in ('admin',):
+            flash('This user cannot be removed.','warning')
+            return redirect(request.referrer)
+        return super(UserView, self).dispatch_request(identifier,method)
 
 class ServerView(ObjectView):
     def on_updated(self,asset):
@@ -63,6 +71,18 @@ class ServerView(ObjectView):
         except Exception as e:
             flash("Warning: "+str(e),'warning')
 
+class RoleView(ObjectView):
+    def dispatch_request(self,identifier,method):
+        if method == 'delete' and identifier in ('admin', 'submitter'):
+            flash('This role cannot be removed.','warning')
+            return redirect(request.referrer)
+
+        if method=='new':
+            self.Form.name.kwargs['render_kw']['readonly'] = False
+        else:
+            self.Form.name.kwargs['render_kw']['readonly'] = True
+
+        return super(RoleView, self).dispatch_request(identifier,method)
 
 admin_views = []
 def register_view( model, path, view_name, viewClass=ObjectView):
@@ -83,5 +103,6 @@ admin = Blueprint('admin', __name__,
 def admin_page():
     return redirect(url_for(".user_edit"))
 
-register_view(User,'user','user_edit')
+register_view(User,'user','user_edit', UserView)
+register_view(Role,'role','role_edit',RoleView)
 register_view(YarraServer,'server','server_edit',ServerView)

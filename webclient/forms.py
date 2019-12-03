@@ -68,3 +68,15 @@ class ServerForm(ModelForm):
         option_widget=widgets.CheckboxInput())
 
 YarraServer.form = ServerForm
+
+
+class RoleForm(ModelForm):
+    def __init__(self,*args,**kwargs):
+        super(RoleForm, self).__init__(*args,**kwargs)
+
+    class Meta:
+        model = Role
+    
+    name = StringField('Name', validators=[InputRequired()], render_kw={'readonly': True})
+    
+Role.form = RoleForm

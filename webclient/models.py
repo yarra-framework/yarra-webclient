@@ -174,6 +174,7 @@ class ServerRoles(db.Model,Base):
     role_id =   db.Column(db.Integer(), db.ForeignKey('roles.id', ondelete='CASCADE'))
 
 
+
 # Define the Role data-model
 class Role(db.Model,Base):
     __tablename__ = 'roles'
@@ -183,6 +184,12 @@ class Role(db.Model,Base):
     def __repr__(self):
         return "<Role {}>".format(self.name)
 
+    def get_id(self):
+        return self.name
+        
+    @classmethod
+    def get_id_field(self):
+        return "name"
 
 # Define the UserRoles association table
 class UserRoles(db.Model,Base):
