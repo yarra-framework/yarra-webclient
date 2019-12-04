@@ -6,7 +6,7 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
     <link rel= "icon" media="all" type="image/vnd.microsoft.icon" href="/favicon.ico">
-    <title>{% block title %}YarraWebClient{% endblock %}</title>
+    <title>Yarra WebClient{% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="/bootstrap.css">
     <link rel="stylesheet" href="/yarra.css">
   </head>
@@ -19,22 +19,22 @@
     <header>
       <nav class="navbar navbar-expand-lg bg-dark navbar-dark">
         <a class="navbar-brand" href="/">
-        YarraWebClient
+        Yarra WebClient
         </a>
         {% block header %}
         {% if current_user.is_authenticated %}
-        {% if current_user.is_admin %}
-          <ul class="navbar-nav float-right">
+        <ul class="navbar-nav float-right">
           <li class="nav-item float-right">
-          <a class="nav-link" href="{{ url_for('admin.user_edit',method='edit')}}"><i class="fas fa-cogs"></i> Admin</a>
+          <a class="nav-link" href="{{ url_for('tasks')}}"><i class="fas fa-tasks"></i> Submissions</a>
+          </li>
+        </ul>
+        {% if current_user.is_admin %}
+        <ul class="navbar-nav float-right">
+          <li class="nav-item float-right">
+          <a class="nav-link" href="{{ url_for('admin.server_edit',method='edit')}}"><i class="fas fa-cogs"></i> Admin</a>
           </li>
         </ul>
         {% endif %}
-          <ul class="navbar-nav float-right">
-          <li class="nav-item float-right">
-          <a class="nav-link" href="{{ url_for('tasks')}}"><i class="fas fa-tasks"></i> Tasks</a>
-          </li>
-          </ul>
         {% endif %}
 
         {% endblock %}
@@ -45,8 +45,10 @@
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           <i class="fas fa-user"></i> {{current_user.id}}
         </a>
-        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownMenuLink">
+        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownMenuLink">          
           <a class="dropdown-item" href="{{ url_for('login.password_change')}}"> <i class="fas fa-user"></i> Account settings</a>
+          <a class="dropdown-item" href="http://yarraframework.com/clients/ywc" target="_blank"> <i class="fas fa-question"></i> Help</a>                    
+          <div class="dropdown-divider"></div>
           <a class="dropdown-item" href="{{ url_for('login.logout')}}"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
       </li>

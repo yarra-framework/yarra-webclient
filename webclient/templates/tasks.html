@@ -1,5 +1,13 @@
 {%extends "base.html" %}
-{% block title %} Tasks {% endblock %}
+{% block title %} &middot; Submissions {% endblock %}
+
+{% block header %}
+	<ul class="navbar-nav mr-auto">
+		<li class="nav-item">
+			<a class="nav-link" href="/"><i class="fas fa-reply"></i> Back</a>
+		</li>
+	</ul>
+{% endblock %}
 
 {% macro row(key,value) %}
   <div class="form-group row">
@@ -25,16 +33,16 @@
 
 {% block content %}
   {{ flashes() }}
-<ul>
 
 <nav class="mb-4">
   <div class="nav nav-tabs modes" id="nav-tab" role="tablist" >
-    <a class="nav-item nav-link {{status|active_eq('pending')}}" id="nav-upload-tab" href="{{url_for('tasks',status='pending')}}" role="tab" aria-controls="nav-upload" aria-selected="true"><i class="fas fa-sync"></i> In Progress</a>
+    <a class="nav-item nav-link {{status|active_eq('pending')}}" id="nav-upload-tab" href="{{url_for('tasks',status='pending')}}" role="tab" aria-controls="nav-upload" aria-selected="true"><i class="fas fa-sync-alt"></i> In Progress</a>
     <a class="nav-item nav-link  {{status|active_eq('submitted')}}" id="nav-archive-tab" href="{{url_for('tasks',status='submitted')}}" role="tab" aria-controls="nav-archive" aria-selected="false"><i class="fas fa-check"></i> Submitted</a>
-    <a class="nav-item nav-link  {{status|active_eq('failed')}}" id="nav-archive-tab" href="{{url_for('tasks',status='failed')}}" role="tab" aria-controls="nav-archive" aria-selected="false"><i class="fas fa-times"></i> Failed</a>
+    <a class="nav-item nav-link  {{status|active_eq('failed')}}" id="nav-archive-tab" href="{{url_for('tasks',status='failed')}}" role="tab" aria-controls="nav-archive" aria-selected="false"><i class="fas fa-exclamation-triangle"></i> Failed</a>
   </div>
 </nav>
 
+<ul>
 {% for t in tasks|sort(attribute='created_date', reverse=True) %}
 <div class="card my-4">
   <div class="card-header">

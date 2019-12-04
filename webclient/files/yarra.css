@@ -190,6 +190,10 @@ body {
   padding-bottom: 0px;
 }
 
+.navbar .nav-item:hover {  
+  background-color: #580F8B;
+}
+
 .nav-link {
   padding-left:  16px !important;  
   padding-right: 16px !important; 
@@ -210,9 +214,13 @@ body {
   color: #fff;     
 }
 
+.navbar .nav-item.active {
+  background-color: #000;         
+}
+
 .nav-item.active {
   color: #373a3c !important;         
-  font-weight: 500;
+
 }
 
 .nav-item.navmen:hover, .nav-item.navmen.active:hover,
@@ -634,7 +642,7 @@ body > footer > div > div.row.justify-content-center.mt-0 > a:hover
   height: auto !important;
 }
 
-#roles {
+#users, #roles, #servers {
   list-style-type: none;
 }
 

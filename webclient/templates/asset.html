@@ -1,10 +1,9 @@
-{%extends "base.html" %}
-{% block title %} {{ asset.name if asset else "Unknown" }} {% endblock %}
+{% extends "base.html" %}
+{% block title %} Edit {{ asset.name if asset else "Unknown" }} {% endblock %}
 {% block header %} {% endblock %}
 {% block content %}
 
-  {% if asset %}
-
+{% if asset %}
 <div class="jumbotron">
   <h1 class="display-3">{{ asset.name }} status: <span class="text-{{ "danger" if asset.status.name=="down" else "success" }}">{{ asset.status.name }}</span></h1>
     <p class="lead">{{ asset.name }} is {{ asset.status.name }} since {{ asset.status_changed|dt }} </p>
@@ -14,7 +13,7 @@
     {{ instructions|safe }}
   </div>
   {{ flashes() }}
-  <form method=post>
+  <form method=post class="assetform">
     {{ form.hidden_tag() }}
     <dl>
       {% for field in form %}
@@ -24,6 +23,5 @@
     <p>
     <input class="btn btn-lg btn-{{ "danger" if asset.status.name=="up" else "success" }}" type=submit value= " Set {{ asset.name }} {{ "up" if asset.status.name == "down" else "down" }} "/> 
   </form>
-
-  {%endif %}
+{%endif %}
 {% endblock %}

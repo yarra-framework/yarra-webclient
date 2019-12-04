@@ -52,7 +52,14 @@ class ObjectView(View):
                 db.session.commit()
                 flash('Submitted.','primary')
                 return redirect(request.referrer)
-        return render_template('asset-edit.html',admin_views=admin_views,asset=asset,assets=assets,form=form,new_form=NewForm(),view_func=self.view_func)
+
+        view_name="Servers"
+        if (self.view_func=="role_edit"):
+            view_name="Roles"
+        if (self.view_func=="user_edit"):
+            view_name="Users"
+
+        return render_template('asset-edit.html',admin_views=admin_views,asset=asset,assets=assets,form=form,new_form=NewForm(),view_func=self.view_func,view_name=view_name)
 
 class UserView(ObjectView):
     def on_updated(self,asset):
@@ -86,8 +93,8 @@ class RoleView(ObjectView):
         return super(RoleView, self).dispatch_request(identifier,method)
 
 admin_views = []
-def register_view( model, path, view_name, viewClass=ObjectView):
-	admin_views.append(dict(view_name=view_name,name=model.__name__))
+def register_view( model, path, view_name, view_title, viewClass=ObjectView):
+	admin_views.append(dict(view_name=view_name,name=model.__name__,title=view_title))
 	view = viewClass.as_view(view_name, model,view_name)
 	view = login_required('admin')(view)
 
@@ -102,8 +109,8 @@ admin = Blueprint('admin', __name__,
 @admin.route('/admin/')
 @login_required()
 def admin_page():
-    return redirect(url_for(".user_edit"))
+    return redirect(url_for(".server_edit"))
 
-register_view(User,'user','user_edit', UserView)
-register_view(Role,'role','role_edit',RoleView)
-register_view(YarraServer,'server','server_edit',ServerView)
+register_view(YarraServer,'server','server_edit','<i class="fas fa-network-wired"></i> Servers',ServerView)
+register_view(User,'user','user_edit','<i class="fas fa-users"></i> Users',UserView)
+register_view(Role,'role','role_edit','<i class="fas fa-tags"></i> Roles',RoleView)
