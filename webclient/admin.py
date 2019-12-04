@@ -56,7 +56,7 @@ class ObjectView(View):
 
 class UserView(ObjectView):
     def on_updated(self,asset):
-            asset.password = pwd_context.hash(asset.password)
+        asset.password = pwd_context.hash(asset.password)
     
     def dispatch_request(self,identifier,method):
         if method == 'delete' and identifier in ('admin',):
@@ -72,6 +72,7 @@ class ServerView(ObjectView):
             flash("Warning: "+str(e),'warning')
 
 class RoleView(ObjectView):
+
     def dispatch_request(self,identifier,method):
         if method == 'delete' and identifier in ('admin', 'submitter'):
             flash('This role cannot be removed.','warning')

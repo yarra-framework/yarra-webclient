@@ -115,37 +115,38 @@ window.addEventListener('load', function() {
 				$show_id('search_results_box');
 		})
 	}
+	if ($id('search_btn')) {
+		$id('search_btn').onclick = function(e) {
+		    e.preventDefault();
+		    e.stopPropagation();
+		    search_box = $id('search_box');
+		    if (search_box.getAttribute('readonly')) {
+		    	search_box.removeAttribute('readonly');
+		    	$set_html('search_btn','Search');
+				$disable_id('submit_btn');
+		    	search_box.value = '';
+		    	archive_case = null;
+		    	return;
+		    }
+		    search_offset = 0
+		    search(search_box.value,0)
+		}
+	$id('search_next_btn').onclick = function(e) {
+		    e.preventDefault();
+		    e.stopPropagation();
+		    search_box = $id('search_box');
+		    search_offset += search_page_length;
 
-	$id('search_btn').onclick = function(e) {
-	    e.preventDefault();
-	    e.stopPropagation();
-	    search_box = $id('search_box');
-	    if (search_box.getAttribute('readonly')) {
-	    	search_box.removeAttribute('readonly');
-	    	$set_html('search_btn','Search');
-			$disable_id('submit_btn');
-	    	search_box.value = '';
-	    	archive_case = null;
-	    	return;
-	    }
-	    search_offset = 0
-	    search(search_box.value,0)
-	}
-$id('search_next_btn').onclick = function(e) {
-	    e.preventDefault();
-	    e.stopPropagation();
-	    search_box = $id('search_box');
-	    search_offset += search_page_length;
+		    search(search_box.value, search_offset)
+		}
+	$id('search_prev_btn').onclick = function(e) {
+		    e.preventDefault();
+		    e.stopPropagation();
+		    search_box = $id('search_box');
+		    search_offset -= 20;
 
-	    search(search_box.value, search_offset)
-	}
-$id('search_prev_btn').onclick = function(e) {
-	    e.preventDefault();
-	    e.stopPropagation();
-	    search_box = $id('search_box');
-	    search_offset -= 20;
-
-	    search(search_box.value, search_offset)
+		    search(search_box.value, search_offset)
+		}
 	}
 
 	const select_server = server => {
@@ -168,7 +169,15 @@ $id('search_prev_btn').onclick = function(e) {
 	$s('#modes select').forEach( mode_select => {
 		mode_select.onchange = e => {
 			mode_details = (servers[$id('server').value][e.target.value]);
-			if(mode_details.request_additional_files) {
+			console.log(mode_details);
+			if(mode_details['requires_acc']) {
+				$id('accession').setAttribute('required',true);
+				$id('accession-label').style['font-weight'] = 700;
+			} else {
+				$id('accession-label').style['font-weight'] = 400;
+				$id('accession').removeAttribute('required');
+			}
+			if(mode_details['request_additional_files']) {
 				$show_id('extra_files_entry');
 				if (!$id('files').value) {
 					$disable_id('extra_files_entry')
@@ -185,7 +194,8 @@ $id('search_prev_btn').onclick = function(e) {
 				entry => { 
 					if (entry.id == mode_select.id + "_"+mode_select.value+"_param") {
 						$show(entry);
-						$enable(entry.getElementsByTagName('input')[0]);
+						input = entry.getElementsByTagName('input')[0]
+						$enable(input);
 					} else {
 						$hide(entry);
 						$disable(entry.getElementsByTagName('input')[0]);

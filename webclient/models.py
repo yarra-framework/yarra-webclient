@@ -180,13 +180,15 @@ class Role(db.Model,Base):
     __tablename__ = 'roles'
     id =   db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(50), unique=True)
+    servers = db.relationship('YarraServer', secondary='server_roles')
+    users = db.relationship('User', secondary='user_roles')
 
     def __repr__(self):
         return "<Role {}>".format(self.name)
 
     def get_id(self):
         return self.name
-        
+
     @classmethod
     def get_id_field(self):
         return "name"

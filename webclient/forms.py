@@ -73,10 +73,19 @@ YarraServer.form = ServerForm
 class RoleForm(ModelForm):
     def __init__(self,*args,**kwargs):
         super(RoleForm, self).__init__(*args,**kwargs)
+        self.servers.query = YarraServer.query
+        self.users.query = User.query
 
     class Meta:
         model = Role
-    
+
     name = StringField('Name', validators=[InputRequired()], render_kw={'readonly': True})
-    
+    servers = QuerySelectMultipleField('Servers',get_label=lambda x:x.name,
+        widget=widgets.ListWidget(prefix_label=False),
+        option_widget=widgets.CheckboxInput())
+
+    users = QuerySelectMultipleField('Users',get_label=lambda x:x.username,
+        widget=widgets.ListWidget(prefix_label=False),
+        option_widget=widgets.CheckboxInput())
+
 Role.form = RoleForm
