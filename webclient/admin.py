@@ -8,28 +8,32 @@ from forms import NewForm, LoginForm
 from extensions import pwd_context
 
 class ObjectView(View):
-    def __init__(self, asset_model,view_func):
-        self.Model = asset_model
+    view_title = "Unknown"
+    icon = ""
+    name = "unknown"
+    def __init__(self):
+        self.Model = self.__class__.model
         self.Form = self.Model.form
-        self.view_func = view_func
-
+        
     def on_updated(self, asset):
         pass
 
     def dispatch_request(self,identifier,method):
         assets = self.Model.query.all()
 
+        view_name = 'admin.'+self.__class__.name
+
         if method == 'new':
             asset = self.Model()
         elif len(assets)==0:
-            return redirect(url_for('admin.'+self.view_func,method='new'))
+            return redirect(url_for(view_name,method='new'))
         elif not identifier:
-            return redirect(url_for('admin.'+self.view_func,identifier=assets[0].get_id(), method=method))
+            return redirect(url_for(view_name,identifier=assets[0].get_id(), method=method))
         else:
             asset = self.Model.query.filter_by(**{self.Model.get_id_field():identifier}).first()
 
         if not asset:
-            return redirect(url_for('admin.'+self.view_func,identifier=assets[0].get_id(), method=method))
+            return redirect(url_for(view_name,identifier=assets[0].get_id(), method=method))
         form = self.Form(obj=asset)
 
         if request.method == 'POST':
@@ -37,7 +41,7 @@ class ObjectView(View):
                 db.session.delete(asset)
                 db.session.commit()
                 flash("Deleted.","primary")
-                return redirect(url_for('admin.'+self.view_func,method='edit'))
+                return redirect(url_for(view_name,method='edit'))
 
             if form.validate_on_submit():
                 form.populate_obj(asset)
@@ -45,23 +49,27 @@ class ObjectView(View):
                 if method == 'new':
                     db.session.add(asset)
                     db.session.commit()
-
                     flash("Created","primary")
-                    return redirect(url_for('admin.'+self.view_func,method='edit'))
+                    return redirect(url_for(view_name,method='edit'))
 
                 db.session.commit()
-                flash('Submitted.','primary')
+                flash('Updated','primary')
                 return redirect(request.referrer)
 
-        view_name="Servers"
-        if (self.view_func=="role_edit"):
-            view_name="Roles"
-        if (self.view_func=="user_edit"):
-            view_name="Users"
-
-        return render_template('asset-edit.html',admin_views=admin_views,asset=asset,assets=assets,form=form,new_form=NewForm(),view_func=self.view_func,view_name=view_name)
+        return render_template('asset-edit.html',
+            admin_views=admin_views,
+            asset=asset,
+            assets=assets,
+            form=form,
+            new_form=NewForm(),
+            view_name=view_name,
+            view_title=self.__class__.view_title)
 
 class UserView(ObjectView):
+    view_title = "Users"
+    icon = "users"
+    name = "user_edit"
+    model = User
     def on_updated(self,asset):
         asset.password = pwd_context.hash(asset.password)
     
@@ -72,6 +80,10 @@ class UserView(ObjectView):
         return super(UserView, self).dispatch_request(identifier,method)
 
 class ServerView(ObjectView):
+    view_title = "Servers"
+    icon = "network-wired"
+    name = "server_edit"
+    model = YarraServer
     def on_updated(self,asset):
         try:
             asset.update_modes()
@@ -79,7 +91,10 @@ class ServerView(ObjectView):
             flash("Warning: "+str(e),'warning')
 
 class RoleView(ObjectView):
-
+    view_title = "Roles"
+    icon = "tags"
+    name = "role_edit"
+    model = Role
     def dispatch_request(self,identifier,method):
         if method == 'delete' and identifier in ('admin', 'submitter'):
             flash('This role cannot be removed.','warning')
@@ -93,14 +108,19 @@ class RoleView(ObjectView):
         return super(RoleView, self).dispatch_request(identifier,method)
 
 admin_views = []
-def register_view( model, path, view_name, view_title, viewClass=ObjectView):
-	admin_views.append(dict(view_name=view_name,name=model.__name__,title=view_title))
-	view = viewClass.as_view(view_name, model,view_name)
-	view = login_required('admin')(view)
+def register_view( path, viewClass):
 
-	admin.add_url_rule('/admin/{}/'.format(path), view_func=view, defaults={'method':'edit','identifier': None})
-	admin.add_url_rule('/admin/{}/<method>/'.format(path),view_func=view,defaults={'identifier': None}, methods=['GET','POST'])
-	admin.add_url_rule('/admin/{}/<method>/<identifier>'.format(path),view_func=view,methods=['GET','POST'])
+    view = viewClass.as_view(viewClass.name)
+
+    admin_views.append(dict(view_name='admin.'+viewClass.name,
+                            icon=viewClass.icon,
+                            title=viewClass.view_title))
+
+    view = login_required('admin')(view)
+
+    admin.add_url_rule('/admin/{}/'.format(path), view_func=view, defaults={'method':'edit','identifier': None})
+    admin.add_url_rule('/admin/{}/<method>/'.format(path),view_func=view,defaults={'identifier': None}, methods=['GET','POST'])
+    admin.add_url_rule('/admin/{}/<method>/<identifier>'.format(path),view_func=view,methods=['GET','POST'])
 
 admin = Blueprint('admin', __name__,
                         template_folder='templates')
@@ -111,6 +131,6 @@ admin = Blueprint('admin', __name__,
 def admin_page():
     return redirect(url_for(".server_edit"))
 
-register_view(YarraServer,'server','server_edit','<i class="fas fa-network-wired"></i> Servers',ServerView)
-register_view(User,'user','user_edit','<i class="fas fa-users"></i> Users',UserView)
-register_view(Role,'role','role_edit','<i class="fas fa-tags"></i> Roles',RoleView)
+register_view('server',ServerView)
+register_view('user', UserView)
+register_view('role', RoleView)
