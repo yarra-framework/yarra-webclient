@@ -21,7 +21,7 @@ class ObjectView(View):
     def dispatch_request(self,identifier,method):
         assets = self.Model.query.all()
 
-        view_name = 'admin.'+self.__class__.name
+        view_name = '.'+self.__class__.name
 
         if method == 'new':
             asset = self.Model()
@@ -85,9 +85,9 @@ class ServerView(ObjectView):
     name = "server_edit"
     model = YarraServer
     def on_updated(self,asset):
-        try:
+        try: # Load the modes from the server.
             asset.update_modes()
-        except Exception as e:
+        except Exception as e: # if it fails, the server URL may be wrong
             flash("Warning: "+str(e),'warning')
 
 class RoleView(ObjectView):
@@ -118,9 +118,9 @@ def register_view( path, viewClass):
 
     view = login_required('admin')(view)
 
-    admin.add_url_rule('/admin/{}/'.format(path), view_func=view, defaults={'method':'edit','identifier': None})
-    admin.add_url_rule('/admin/{}/<method>/'.format(path),view_func=view,defaults={'identifier': None}, methods=['GET','POST'])
-    admin.add_url_rule('/admin/{}/<method>/<identifier>'.format(path),view_func=view,methods=['GET','POST'])
+    admin.add_url_rule('{}/'.format(path), view_func=view, defaults={'method':'edit','identifier': None})
+    admin.add_url_rule('{}/<method>/'.format(path),view_func=view,defaults={'identifier': None}, methods=['GET','POST'])
+    admin.add_url_rule('{}/<method>/<identifier>'.format(path),view_func=view,methods=['GET','POST'])
 
 admin = Blueprint('admin', __name__,
                         template_folder='templates')

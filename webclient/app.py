@@ -2,23 +2,20 @@
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash,send_from_directory, jsonify, current_app
 from flask_sqlalchemy import SQLAlchemy
-from datetime import date, timezone
-import click
-import flask_login
-from extensions import db, login_manager, login_required, json_errors, make_celery
+from flask_jsontools import DynamicJSONEncoder
 
+from datetime import date, timezone
+import os, cli, traceback
+import click, flask_login
+
+from extensions import db, login_manager, login_required, json_errors, make_celery
+from models import User, Role, YarraServer, ModeModel, yasArchive, YarraTask, SubmissionStatus
 from yarrapyclient.yarraclient import Task, Priority
 
-from models import User, Role, YarraServer, ModeModel, yasArchive, YarraTask, SubmissionStatus
-
 from sqlalchemy.sql import text
-import resumable
-import admin
-import login_flow
-import os
-import cli
-from flask_jsontools import DynamicJSONEncoder
-import traceback
+from resumable import resumable_upload as upload_blueprint
+from admin import admin as admin_blueprint
+from login_flow import login_blueprint
 
 def create_app():
     global celery
@@ -32,7 +29,7 @@ def create_app():
 
     app.config['YARRA_ARCHIVE_UPLOAD'] = os.environ.get("YARRA_ARCHIVE_UPLOAD", 'False').lower() == 'true'
 
-    app.secret_key = "asdfasdfere"
+    app.secret_key = os.environ.get("YARRA_SECRET_KEY")
     db.init_app(app) 
     try: 
         db.create_all()
@@ -40,9 +37,9 @@ def create_app():
         pass
     login_manager.init_app(app)
     cli.init_app(app)
-    app.register_blueprint(resumable.resumable_upload)
-    app.register_blueprint(admin.admin)
-    app.register_blueprint(login_flow.login_blueprint)
+    app.register_blueprint(upload_blueprint)
+    app.register_blueprint(admin_blueprint, url_prefix='/admin')
+    app.register_blueprint(login_blueprint)
     app.jinja_env.trim_blocks = True
     app.jinja_env.lstrip_blocks = True
     app.json_encoder = DynamicJSONEncoder
