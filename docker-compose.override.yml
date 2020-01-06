@@ -1,4 +1,4 @@
-version: '2'
+version: '3.4'
 
 services:
   web:
@@ -11,8 +11,14 @@ services:
       YARRA_ARCHIVE_UPLOAD: 'true'
     volumes:
       - '/media/archive:/archive'
+  archive-index-once:
+    image: yarranyu/archive-indexer:0.1b11
+    command: "true"
+    volumes:
+      - '/media/archive:/archive'
+      - 'data:/data'
   archive-index-task:
-      image: strm/tasker 
+      image: strm/tasker
       volumes:
           - "/var/run/docker.sock:/var/run/docker.sock"
       environment:
@@ -30,5 +36,5 @@ services:
                          image: yarranyu/archive-indexer:0.1b11
                          entrypoint: ./YASIndexer
                          volumes:
-                          - 'data:/data'
+                          - 'yarrawebclient_data:/data'
                           - '/media/archive:/archive'

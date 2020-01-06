@@ -1,4 +1,4 @@
-version: '2'
+version: '3.4'
 
 x-webclient-service: &webclient-service
   image: yarranyu/yarra-webclient:latest
@@ -30,13 +30,14 @@ services:
   nginx:
     image: yarranyu/webclient-nginx:latest
     ports:
-      - "6060:8080"
-    depends_on: 
+      - "80:8080"
+    depends_on:
       - web
   redis:
     image: redis
-    expose: 
+    expose:
       - "6739"
 volumes:
   data:
+    name: yarrawebclient_data
   temp:

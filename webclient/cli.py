@@ -10,10 +10,11 @@ db_cli = AppGroup('db')
 
 @user_cli.command('create')
 @click.argument('name')
-def create_user(name):
+@click.argument('email')
+def create_user(name,email):
     roles = [db.session.query(Role).filter_by(name=r).scalar() for r in ['admin','submitter']]
     pw = getpass()
-    new_user =  User(username=name, password=pwd_context.hash(pw),roles=roles)
+    new_user =  User(username=name, email=email, password=pwd_context.hash(pw),roles=roles)
     db.session.add(new_user)
     db.session.commit()
     print("Done")
