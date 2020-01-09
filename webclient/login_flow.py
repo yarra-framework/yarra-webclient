@@ -66,7 +66,7 @@ def register():
         return redirect('/')
     form = RegisterForm()
     if request.method == 'POST' and form.validate():
-        user = User(username = form.username.data, password = pwd_context.hash(form.password.data))
+        user = User(email = form.email.data, username = form.username.data, password = pwd_context.hash(form.password.data))
         db.session.add(user)
         db.session.commit()
         flash('Registration recieved')
