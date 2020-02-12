@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from functools import wraps
-from flask import flash, request, redirect,jsonify, make_response
+from flask import flash, request, redirect,jsonify, make_response, url_for, render_template
 import flask_login
 from flask_login import LoginManager
 from passlib.apps import custom_app_context as pwd_context
@@ -103,11 +103,8 @@ def login_required(role=None):
                 return login_manager.unauthorized()
 
             if ( role is not None and role not in flask_login.current_user.roles):
-                flash("Insufficient permissions",'warning')
-                if (request.path != "/"):
-                    return redirect("/") 
-                else: 
-                    return redirect(url_for("login")) 
+                flash("Insufficient permissions: this account might not be activated.",'warning')
+                return render_template('pending.html')
 
             return fn(*args, **kwargs)
         return decorated_view
