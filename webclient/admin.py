@@ -70,8 +70,8 @@ class UserView(ObjectView):
     icon = "users"
     name = "user_edit"
     model = User
-    def on_updated(self,asset):
-        asset.password = pwd_context.hash(asset.password)
+    # def on_updated(self,asset):
+        # asset.password = pwd_context.hash(asset.password)
     
     def dispatch_request(self,identifier,method):
         if method == 'delete' and identifier in ('admin',):
@@ -89,6 +89,7 @@ class ServerView(ObjectView):
             asset.update_modes()
         except Exception as e: # if it fails, the server URL may be wrong
             flash("Warning: "+str(e),'warning')
+
 
 class RoleView(ObjectView):
     view_title = "Roles"
