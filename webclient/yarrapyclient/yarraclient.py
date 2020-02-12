@@ -11,6 +11,7 @@ import shutil
 import io
 from .serverconnection import ServerConnection
 from smb.smb_structs import OperationFailure
+import hashlib
 
 class Priority(Enum):
     Normal = 1
@@ -98,6 +99,8 @@ class TaskData():
     client_version =     '0.1' # type: str 
     task_creation_datetime = None # type: datetime 
     task_name = None
+
+    scan_file_hash = None
     def __init__(self, **kwargs):
         self.task_creation_datetime = datetime.now()
         self.adjustment_files = []
@@ -111,6 +114,7 @@ class TaskData():
             ReconMode =     self.recon_mode,
             ScanProtocol =  self.scan_protocol,
             ScanFile =      self.scan_file,
+            ScanFileHash =  self.scan_file_hash,
             AdjustmentFilesCount = str(len(self.adjustment_files)) if self.adjustment_files else '0',
             ParamValue =    self.param_value or '0',
             EMailNotification = self.email_notification,
@@ -198,13 +202,14 @@ class Task():
                 task_file += '_prio'
 
             try:
-                conn.store(self.task_name, task_file, io.BytesIO(self.task_data.to_config().encode()))
                 with open(str(self.scan_file),'rb') as scan_f:
+                    task_data.scan_file_hash = hashlib.md5(scan_f.read()).hexdigest()
                     conn.store(self.task_name, self.task_data.scan_file, scan_f)
                 if self.extra_files:
                     for i, file in enumerate(self.extra_files):
                         with open(str(file),'rb') as f:
                             conn.store(self.task_name, "{}_{}.dat".format(self.task_name,str(i)), f)
+                conn.store(self.task_name, task_file, io.BytesIO(self.task_data.to_config().encode()))
 
             except Exception as e:
                 # Clean up...
