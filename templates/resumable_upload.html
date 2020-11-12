@@ -1,0 +1,113 @@
+<html>
+	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+		<script src="resumable.js"></script>
+
+	</head>
+	<body>
+		<ul id="file-list"></ul>
+		<p>
+			<input id="files-upload" type="file" multiple>
+		</p>
+		<p id="drop-area">
+			<span class="drop-instructions">or drag and drop files here</span>
+			<span class="drop-over">Drop files here!</span>
+		</p>
+		<script>
+			(function () {
+	var filesUpload = document.getElementById("files-upload"),
+		dropArea = document.getElementById("drop-area"),
+		fileList = document.getElementById("file-list");
+	function uploadFile (file) {
+		var li = document.createElement("li"),
+			div = document.createElement("div"),
+			img,
+			progressBarContainer = document.createElement("div"),
+			progressBar = document.createElement("div"),
+			reader,
+			xhr,
+			fileInfo;
+		li.appendChild(div);
+		progressBarContainer.className = "progress-bar-container";
+		progressBar.className = "progress-bar";
+		progressBarContainer.appendChild(progressBar);
+		li.appendChild(progressBarContainer);
+
+		var r = new Resumable({target:'/resumable_upload', chunkSize:1024*1024*10});
+		r.on('fileRetry', function(file){
+		    console.log('fileRetry', file);
+		  });
+		r.on('fileError', function(file, message){
+		    console.log('fileError', file, message);
+		  });
+		r.on('uploadStart', function(){
+		    console.log('uploadStart');
+		  });
+		r.on('complete', function(){
+		    console.log('complete');
+		  });
+		r.on('progress', function(){
+		    // console.log('progress');
+		  });
+		r.on('error', function(message, file){
+		    console.log('error', message, file);
+		  });
+		r.on('pause', function(){
+		    console.log('pause');
+		  });
+		r.on('cancel', function(){
+		    console.log('cancel');
+		  });
+		r.on('fileAdded', function(file, event){
+		    r.upload();
+		    console.log('fileAdded', event);
+		  });
+		var file2 = new File(['foobar'], 'sample.txt')
+		r.addFile(file2)
+		// Present file info and append it to the list of files
+		fileInfo = "<div><strong>Name:</strong> " + file.name + "</div>";
+		fileInfo += "<div><strong>Size:</strong> " + parseInt(file.size / 1024, 10) + " kb</div>";
+		fileInfo += "<div><strong>Type:</strong> " + file.type + "</div>";
+		div.innerHTML = fileInfo;
+		fileList.appendChild(li);
+	}
+	function traverseFiles (files) {
+		if (typeof files !== "undefined") {
+			for (var i=0, l=files.length; i<l; i++) {
+				uploadFile(files[i]);
+			}
+		}
+		else {
+			fileList.innerHTML = "No support for the File API in this web browser";
+		}
+	}
+	filesUpload.addEventListener("change", function () {
+		traverseFiles(this.files);
+	}, false);
+	dropArea.addEventListener("dragleave", function (evt) {
+		var target = evt.target;
+		if (target && target === dropArea) {
+			this.className = "";
+		}
+		evt.preventDefault();
+		evt.stopPropagation();
+	}, false);
+	dropArea.addEventListener("dragenter", function (evt) {
+		this.className = "over";
+		evt.preventDefault();
+		evt.stopPropagation();
+	}, false);
+	dropArea.addEventListener("dragover", function (evt) {
+		evt.preventDefault();
+		evt.stopPropagation();
+	}, false);
+	dropArea.addEventListener("drop", function (evt) {
+		traverseFiles(evt.dataTransfer.files);
+		this.className = "";
+		evt.preventDefault();
+		evt.stopPropagation();
+	}, false);
+})();
+		</script>
+	</body>
+</html>
