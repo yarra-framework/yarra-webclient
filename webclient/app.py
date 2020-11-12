@@ -191,6 +191,10 @@ def submit(task_id,priority):
 def submit_js():
     return send_from_directory('.',
                                'files/submit.js')
+@app.route('/files/iecheck.js')
+def iecheck():
+    return send_from_directory('.',
+                               'files/iecheck.js')
 
 
 @app.route('/favicon.ico')
