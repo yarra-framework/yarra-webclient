@@ -38,6 +38,15 @@ window.addEventListener('load', function() {
 
 	const uploader = new Resumable({target:'/resumable_upload', chunkSize:1024*1024*10});
 
+	for (file_input of document.querySelectorAll('.custom-file input')) {
+	        file_input.onchange = e => {
+	                var file_input = e.target;
+	                var files = Array.from(file_input.files)
+	                        .map(f=>f.name)
+	                        .join(', ');
+                	file_input.parentElement.querySelector('.custom-file-label').innerText = files;
+        	}
+	};
 
 	$disable_id('extra_files');
 	$s('#nav-tab .nav-item').forEach(
@@ -401,6 +410,10 @@ function arrays_equal(dv1, dv2)
 function char(c) {
 	return c.charCodeAt(0)
 }
-
+function ieVersion(uaString) {
+    uaString = uaString || navigator.userAgent;
+    var match = /\b(MSIE |Trident.*?rv:|Edge\/)(\d+)/.exec(uaString);
+    if (match) return parseInt(match[2])
+}
 
 

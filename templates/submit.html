@@ -178,18 +178,7 @@
 {% endblock %}
 
 {% block footer %}
+<script src="files/iecheck.js"></script>
 <script src="files/submit.js"></script>
 <script src="files/resumable.js"></script>
-<script type="text/javascript">
-
-for (file_input of document.querySelectorAll('.custom-file input')) {
-	file_input.onchange = e => {
-		var file_input = e.target;
-		var files = Array.from(file_input.files)
-			.map(f=>f.name)
-			.join(', ');
-		file_input.parentElement.querySelector('.custom-file-label').innerText = files;
-	}
-};
-</script>
 {% endblock %}
