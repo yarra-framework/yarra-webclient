@@ -1,0 +1,204 @@
+{%extends "base.html" %}
+{% block content %}
+{{ flashes() }}
+ <form id="form" action="/submit_task" method="post"  class="needs-validation" novalidate>
+<nav class="mb-4">
+  <div class="nav nav-tabs modes" id="nav-tab" role="tablist" >
+    <a class="nav-item nav-link active" id="nav-upload-tab" data-toggle="tab" href="" role="tab" aria-controls="nav-upload" aria-selected="true"><i class="fas fa-upload"></i> Upload File</a>
+{% if config.YARRA_ARCHIVE_UPLOAD %}
+    <a class="nav-item nav-link " id="nav-archive-tab" data-toggle="tab" href="" role="tab" aria-controls="nav-archive" aria-selected="false"><i class="fas fa-search"></i> Search Archive</a>
+{% endif %}
+  </div>
+</nav>
+<div class="tab-content" id="nav-tabContent">
+  <div class="tab-pane fade show active" id="nav-upload" role="tabpanel" aria-labelledby="nav-home-tab">
+  <div class="form-group row">
+    <div class="col-sm-12">
+    	<div class= "custom-file">
+			<input type="file" class="form-control custom-file-input" id="files" name="file" accept=".dat" required/>
+		    <label for="files" class="custom-file-label" default="Choose raw-data file..." >Choose raw-data file...</label>
+		    <div class="invalid-feedback">
+			    A file is required.
+		    </div>
+		</div>
+	</div>
+  </div>
+
+  <div class="form-group row d-none" id="extra_files_entry">
+    <div class="col-sm-12">
+    	<div class= "custom-file">
+			<input type="file" class="form-control custom-file-input" id="extra_files" name="extra_files" multiple disabled/>
+		    <label for="extra_files" id="extra_files_label" class="custom-file-label" default="Additional files" >Additional files</label>
+		</div>
+	</div>
+  </div>
+  </div>
+{% if config.YARRA_ARCHIVE_UPLOAD %}
+  <div class="tab-pane fade" id="nav-archive" role="tabpanel" aria-labelledby="nav-profile-tab">
+  	<div class="row">
+	  <div class="col-sm-11 form-group">
+    	  <input type="text" name="search_box" class="form-control" id="search_box" placeholder="Search case..." style="height: 37px !important;" required disabled>
+    	</div>
+	  <div class="col-sm-1">
+	    <button class="btn btn-primary float-right" type="submit" id="search_btn" style="height: 37px;">Search</button>
+	  </div>
+  </div>
+  <div id="search_results_box" class="card my-3 d-none p-4">
+  	<div class="" style="max-height:300px; overflow-y: auto;">
+	<table class="table" id='search_results'></table>
+	</div>
+	<div class="row mt-3">
+		<div class="col-sm-10"></div>
+		<div class="col-sm-1">
+	    <button class="btn btn-primary" type="submit" id="search_prev_btn" style="height: 37px;"><i class="fas fa-angle-left"></i> Prev</button>
+		</div>
+
+		<div class="col-sm-1">
+	    <button class="btn btn-primary" type="submit" id="search_next_btn" style="height: 37px;">Next <i class="fas fa-angle-right"></i></button>
+		</div>
+	</div>
+  </div>
+  </div>
+{% endif %}  
+</div>
+<div class="card my-4">
+  <div class="card-header">
+    Scan Information
+  </div>
+  <div class="card-body" >
+  <div class="form-group row">
+    <label for="patientName" class="col-sm-2 col-form-label">Patient Name</label>
+    <div class="col-sm-10">
+    <input type="text" name="patient_name" class="form-control" id="patientName" placeholder="Patient name" required>
+	    <div class="invalid-feedback">
+		    A patient name is required.
+	    </div>
+	</div>
+  </div>
+  <div class="form-group row">
+    <label for="accession" class="col-sm-2 col-form-label" id="accession-label">Accession number</label>
+    <div class="col-sm-10">
+    <input type="text" name="accession" class="form-control" id="accession" placeholder="Accession">
+	</div>
+  </div>
+  <div class="form-group row">
+    <label for="taskId" class="col-sm-2 col-form-label">Task ID</label>
+    <div class="col-sm-10">
+    <input type="text" name="taskid" class="form-control" id="taskId" placeholder="Task ID" required>
+	</div>
+  </div>
+  <div class="form-group row">
+    <label for="protocol" class="col-sm-2 col-form-label">Protocol</label>
+    <div class="col-sm-10">
+  <input name='protocol'  class="form-control" id="protocol" value="Unknown" readonly="">
+</div></div>
+
+</div>
+</div>
+
+<div class="card my-4">
+  <div class="card-header">
+	Reconstruction Settings
+  </div>
+  <div class="card-body">
+    <h5 class="card-title"></h5>
+      <div class="form-group row">
+	    <label for="mode" class="col-sm-2 col-form-label">Server</label>
+	    <div class="col-sm-10">
+	    <select  name="server"  class="form-control" id="server" required>
+		    {% for server in servers %}
+	    	<option value="{{server.name}}">{{ server.name }}</option>
+	    	{% endfor %}
+	    </select>
+   		</div>
+   	  </div>
+      <div class="form-group row">
+	    <label for="mode" class="col-sm-2 col-form-label">Mode</label>
+	    <div class="col-sm-10" id="modes">
+	    {% for server in servers %}
+	    <select name="mode_{{server.name}}"  class="form-control {% if not loop.first %} d-none {%endif %}" id="mode_{{server.name}}" required>
+	    	{% for mode in server.modes %}
+	    	<option value="{{mode.name}}">{{ mode.desc }}</option>
+	    	{% endfor %}
+	    </select>
+	    {% endfor %}
+  		</div>
+   	  </div>
+    {% for server in servers %}
+	{% for mode in server.modes %}
+		{% if mode.param_label %}
+		  <div class="form-group row mode_param_entry d-none" id="mode_{{server.name}}_{{mode.name}}_param">
+		    <label for="param" class="col-sm-2 col-form-label"><strong>{{mode.param_label}}</strong></label>
+		    <div class="col-sm-10">
+		    <input name='param' value="{{mode.param_default}}" type="number" min="{{mode.param_min}}" max="{{mode.param_max}}" class="form-control" placeholder="">
+    	    <div class="invalid-feedback">
+			    Must be an integer between {{mode.param_min}} and {{mode.param_max}} inclusive
+    		</div>
+	       </div>
+		  </div>
+    {% endif %}
+    {% endfor %}
+    {% endfor %}
+	  <div class="form-group row">
+	    <label for="notification" class="col-sm-2 col-form-label">Notification</label>
+	    <div class="col-sm-10">
+	    <input name='notification'  type="text" class="form-control" id="notification" placeholder="" value="{{current_user.email}}">
+		</div>
+	  </div>
+      <div class="form-group row">
+	    <label for="processing" class="col-sm-2 col-form-label">Processing</label>
+	    <div class="col-sm-10">
+
+		<div class="custom-control custom-radio custom-control-inline mt-2">
+		  <input class="custom-control-input" type="radio" name="processing" id="processing1" value="default" checked>
+		  <label class="custom-control-label" for="processing1">Default</label>
+		</div>
+		<div class="custom-control custom-radio custom-control-inline">
+		  <input class="custom-control-input" type="radio" name="processing" id="processing2" value="night">
+		  <label class="custom-control-label" for="processing2">Night</label>
+		</div>
+		<div class="custom-control custom-radio custom-control-inline">
+		  <input class="custom-control-input" type="radio" name="processing" id="processing3" value="priority">
+		  <label class="custom-control-label" for="processing3">Priority</label>
+		</div>
+{#	    <select name='processing'  class="form-control" id="processing">
+	    	<option>Default</option>
+	    	<option>Night</option>
+	    	<option>Priority</option>
+	    </select>#}
+   		</div>
+   	  </div>
+	</div>
+</div>
+<div class="form-group row mb-5">
+    <div class="col-12">
+		<button class="btn btn-primary float-right" type="submit" id="submit_btn" disabled>Send Task</button>
+    	<button class="btn btn-danger float-right mx-2 d-none" type="button" id="cancel_btn">Cancel</button>
+    </div>
+</div>
+</form>
+</div>
+<div class="progress fixed-bottom m-2" id="progress-outer" >
+  <div id="progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>
+</div>
+{% endblock %}
+
+{% block footer %}
+<script src="files/submit.js"></script>
+<script src="files/resumable.js"></script>
+<script type="text/javascript">
+
+for (file_input of document.querySelectorAll('.custom-file input')) {
+	file_input.onchange = e => {
+		var file_input = e.target;
+		var files = Array.from(file_input.files)
+			.map(f=>f.name)
+			.join(', ');
+		file_input.parentElement.querySelector('.custom-file-label').innerText = files;
+	}
+};
+servers = {{servers_dict|tojson}};
+</script>
+
+
+{% endblock %}

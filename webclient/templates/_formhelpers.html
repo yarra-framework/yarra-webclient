@@ -1,0 +1,38 @@
+  {% macro render_field(field) %}
+    <dt>{{ field.label }}
+    <dd>{{ field(class_= "form-control " + ("is-invalid" if field.errors else ""),**kwargs)|safe }}
+    {% if field.errors %}
+      <div class="invalid-feedback">
+      {% for error in field.errors %}
+        {{ error }}
+      {% endfor %}
+      </ul>
+    {% endif %}
+    </dd>
+  {% endmacro %}
+
+{% macro flashes() %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category,message in messages %}
+          <div class="alert alert-{{ category }}" role="alert">
+            {{ message }}
+          </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+{% endmacro %}
+
+{% macro render_form(form,submit_to="",submit_as="Submit") %}
+  <form method=post action="{{submit_to}}">
+    {{ form.hidden_tag() }}
+    <dl>
+      {% for field in form %}
+        {{ render_field(field) if field.name !=  "csrf_token" }}
+      {% endfor %}
+    </dl>
+    <p>
+    <input class="btn btn-lg btn-success" }}" type=submit value= "{{submit_as}}"/> 
+    </p>
+  </form>
+{% endmacro %}

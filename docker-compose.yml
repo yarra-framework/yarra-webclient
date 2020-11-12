@@ -1,0 +1,43 @@
+version: '3.4'
+
+x-webclient-service: &webclient-service
+  image: yarranyu/yarra-webclient:latest
+  environment:
+    PYTHONUNBUFFERED: 'true'
+    YARRA_ARCHIVE_UPLOAD: 'false'
+  volumes:
+    - 'data:/app/webclient/data'
+    - 'temp:/tmp'
+services:
+  web:
+    <<: *webclient-service
+    depends_on:
+      - celery
+    expose:
+      - "8000"
+    env_file:
+      - ./secret.env
+  celery:
+    <<: *webclient-service
+    command: celery worker --app=app.celery --concurrency=2 --loglevel=WARN
+    depends_on:
+      - redis
+  celery-beat:
+    <<: *webclient-service
+    command: celery beat --app=app.celery --loglevel=WARN
+    depends_on:
+      - redis
+  nginx:
+    image: yarranyu/webclient-nginx:latest
+    ports:
+      - "80:8080"
+    depends_on:
+      - web
+  redis:
+    image: redis
+    expose:
+      - "6739"
+volumes:
+  data:
+    name: yarrawebclient_data
+  temp:

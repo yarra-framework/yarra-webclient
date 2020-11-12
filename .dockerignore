@@ -1,0 +1,12 @@
+.git
+.cache
+**/__pycache__
+**/*.db
+venv
+broker
+*.dat
+mnt
+tmp
+**/*.sqlitebrowser
+**/*.sqlite
+webclient/data

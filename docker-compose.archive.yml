@@ -1,0 +1,34 @@
+version: '2'
+
+services:
+  yarra-webclient:
+    environment:
+      YARRA_ARCHIVE_UPLOAD: 'true'
+    volumes:
+      - '/media/archive:/archive'
+  celery:
+    environment:
+      YARRA_ARCHIVE_UPLOAD: 'true'
+    volumes:
+      - '/media/archive:/archive'
+  archive-index-task:
+      image: strm/tasker 
+      volumes:
+          - "/var/run/docker.sock:/var/run/docker.sock"
+      environment:
+           configuration: |
+               logging:
+                  level:
+                    ROOT: WARN
+                    org.springframework.web: WARN
+               schedule:
+                   - every: day
+                     task: indexer
+               tasks:
+                   docker:
+                       - name: indexer
+                         image: yarranyu/archive-indexer:0.1b11
+                         entrypoint: ./YASIndexer
+                         volumes:
+                          - 'data:/data'
+                          - '/media/archive:/archive'
