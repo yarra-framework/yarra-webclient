@@ -203,7 +203,7 @@ class Task():
 
             try:
                 with open(str(self.scan_file),'rb') as scan_f:
-                    task_data.scan_file_hash = hashlib.md5(scan_f.read()).hexdigest()
+                    self.task_data.scan_file_hash = hashlib.md5(scan_f.read()).hexdigest()
                     conn.store(self.task_name, self.task_data.scan_file, scan_f)
                 if self.extra_files:
                     for i, file in enumerate(self.extra_files):
