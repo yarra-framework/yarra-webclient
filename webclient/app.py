@@ -4,7 +4,7 @@ from flask import Flask, request, session, g, redirect, url_for, abort, \
 from flask_sqlalchemy import SQLAlchemy
 from flask_jsontools import DynamicJSONEncoder
 
-from datetime import date, timezone
+from datetime import date, timezone, datetime
 import os, cli, traceback
 import click, flask_login
 
@@ -310,7 +310,7 @@ def submit_task(): # todo: prevent submissions to incorrect servers
                  scan_file_path=filepath, 
                  protocol =     request.form.get('protocol'),
                  patient_name = request.form.get('patient_name'),
-                 name =         request.form.get('taskid'),
+                 name =         request.form.get('taskid')+datetime.now().strftime("_%Y%m%d_%H%M%S_%f"),
                  accession =    request.form.get('accession'),
                  param_value =  request.form.get('param'),
                  priority =     priority,
