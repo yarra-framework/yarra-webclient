@@ -90,6 +90,9 @@ class YarraTask(db.Model,Base):
     submission_status=  db.Column(db.Enum(SubmissionStatus), default=SubmissionStatus.Pending)
     created_date =      db.Column(UtcDateTime, default=utcnow())
 
+    def __repr__(self):
+        return 'id: {}, protocol: {}, file: {}, status: {}, param: {}'.format(self.id, self.protocol, self.scan_file_path, str(self.submission_status), self.param_value)
+
 class YarraServer(db.Model,Base):
     id =    db.Column(db.Integer, primary_key=True)
     path =  db.Column(db.String, nullable=False, default="", info={'label':'Path'})

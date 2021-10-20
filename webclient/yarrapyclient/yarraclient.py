@@ -114,7 +114,7 @@ class TaskData():
             ReconMode =     self.recon_mode,
             ScanProtocol =  self.scan_protocol,
             ScanFile =      self.scan_file,
-            ScanFileHash =  self.scan_file_hash,
+            ScanFileHash =  self.scan_file_hash or '',
             AdjustmentFilesCount = str(len(self.adjustment_files)) if self.adjustment_files else '0',
             ParamValue =    self.param_value or '0',
             EMailNotification = self.email_notification,
@@ -155,7 +155,7 @@ class Task():
 
     @staticmethod
     def from_other(t):
-        return Task(t.mode, t.scan_file_path, t.protocol, t.patient_name, t.name, t.accession, t.priority, t.extra_files)
+        return Task(t.mode, t.scan_file_path, t.protocol, t.patient_name, t.name, t.accession, t.priority, t.extra_files, email_notifications = t.email_notifications, param_value = t.param_value)
 
     def __init__(self, mode, scan_file_path, protocol, patient_name, task_name, acc=None, priority = Priority.Normal, extra_files=None, *, email_notifications = None, param_value=None):
         self.mode = mode
@@ -203,7 +203,8 @@ class Task():
 
             try:
                 with open(str(self.scan_file),'rb') as scan_f:
-                    self.task_data.scan_file_hash = hashlib.md5(scan_f.read()).hexdigest()
+                    # self.task_data.scan_file_hash = hashlib.md5(scan_f.read()).hexdigest()
+                    # scan_f.seek(0)
                     conn.store(self.task_name, self.task_data.scan_file, scan_f)
                 if self.extra_files:
                     for i, file in enumerate(self.extra_files):

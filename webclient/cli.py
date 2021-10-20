@@ -1,6 +1,6 @@
 from flask.cli import AppGroup
 from extensions import db, pwd_context
-from models import User, Role, YarraServer, ModeModel
+from models import User, Role, YarraServer, ModeModel, YarraTask
 import click
 from getpass import getpass
 
@@ -24,6 +24,16 @@ def list_users():
     users = db.session.query(User).all()
     for u in users:
         print(u, ", ".join([role.name for role in u.roles]))
+
+
+
+@user_cli.command('tasks')
+@click.argument('user')
+def list_users(user):
+    tasks = db.session.query(YarraTask).join(User).filter(User.username == user)
+    for t in tasks:
+        print(t)
+
 
 @user_cli.command('reset')
 @click.argument('name')

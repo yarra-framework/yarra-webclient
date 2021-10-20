@@ -6,7 +6,7 @@ build:
 	docker build -t $(REPO):$(VERSION) .
 
 run: build
-	docker run -rm ${REPO}
+	docker run --rm ${REPO}
 
 push: build
 	docker push  $(REPO):$(VERSION)

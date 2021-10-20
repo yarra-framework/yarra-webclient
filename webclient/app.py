@@ -16,6 +16,7 @@ from sqlalchemy.sql import text
 from resumable import resumable_upload as upload_blueprint
 from admin import admin as admin_blueprint
 from login_flow import login_blueprint
+from sqlalchemy.orm.session import make_transient
 
 def create_app():
     global celery
@@ -141,9 +142,10 @@ def test():
 @celery.task
 def background_submit(task_id):
     yarra_task = db.session.query(YarraTask).get(task_id)
+    print("Submitting", yarra_task)
     try:
         t = Task.from_other(yarra_task)
-
+        print("Details:", t)
         yarra_task.submission_status = SubmissionStatus.Submitting
         db.session.commit()
         t.submit()
@@ -154,6 +156,35 @@ def background_submit(task_id):
         yarra_task.submission_status = SubmissionStatus.Failed
     finally:
         db.session.commit()
+
+
+
+@app.cli.command("resubmit")
+@click.argument('task_id')
+@click.argument('mode')
+@click.argument('server_name')
+@click.argument('priority',default='')
+def resubmit(task_id,mode,server_name,priority):
+    if (priority == 'high'):
+        priority = Priority.High 
+    elif (priority == 'night'):
+        priority = Priority.Night 
+    else:
+        priority = Priority.Normal
+
+    task = db.session.query(YarraTask).get(task_id)
+    db.session.expunge(task)
+    make_transient(task)
+    task._oid = None
+    task.id = None
+    task.mode = db.session.query(ModeModel).join(ModeModel.server)\
+                 .filter(ModeModel.name==mode)\
+                 .filter(YarraServer.name==server_name).scalar()
+    print("mode", task.mode)
+    db.session.add(task)
+    db.session.commit()
+    background_submit.delay(task.id)
+    print("OK")
 
 @app.cli.command("submit")
 @click.argument('task_id')
@@ -240,8 +271,11 @@ def index():
 @login_required('submitter')
 @json_errors()
 def submit_task(): # todo: prevent submissions to incorrect servers
-    extra_files = request.form.getlist('extra_files')
-
+    if request.form.get('extra_files') != 'undefined':
+        extra_files = request.form.getlist('extra_files')
+    else:
+        extra_files = []
+    print('extra_files',extra_files)
     print(request.form)
     for k in ['mode','server','protocol','patient_name','taskid', 'processing']:
         if not request.form.get(k):
@@ -288,6 +322,7 @@ def submit_task(): # todo: prevent submissions to incorrect servers
 
     print("submitting");
     background_submit.delay(yarra_task.id)
+    print(yarra_task)
     flash("Task is being submitted.","success")
     return "OK"
     # t = Task(mode, 
