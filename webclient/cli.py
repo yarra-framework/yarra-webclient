@@ -63,7 +63,7 @@ def init_db():
     db.session.add(admin_role)
     submit_role = Role(name="submitter")
     db.session.add(submit_role)
-    initial_admin = User(username="admin", email="admin@yarra.rocks", password=pwd_context.hash("admin"),roles=[admin_role,submit_role])
+    initial_admin = User(username="admin", email="admin@localhost", password=pwd_context.hash("admin"),roles=[admin_role,submit_role])
     db.session.add(initial_admin)
     
     # servers = [YarraServer(name='***REMOVED***',username='yarra',path='***REMOVED***', roles=[submit_role]), 

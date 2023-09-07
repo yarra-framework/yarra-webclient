@@ -118,8 +118,8 @@ class TaskData():
             AdjustmentFilesCount = str(len(self.adjustment_files)) if self.adjustment_files else '0',
             ParamValue =    self.param_value or '0',
             EMailNotification = self.email_notification,
-            PatientName =   self.patient_name
-
+            PatientName =   self.patient_name,
+            ACC =           str(self.acc_number) if self.acc_number is not None else '',
         )
 
         config['Information'] = dict(
@@ -130,8 +130,7 @@ class TaskData():
                 SystemVendor =  self.system_vendor,
                 SystemVersion = self.system_version,
                 YarraClient =   self.yarra_client,
-                ClientVersion = self.client_version,
-                ACC =           str(self.acc_number) if self.acc_number is not None else '',
+                ClientVersion = self.client_version
         )
         if self.adjustment_files:
             config['AdjustmentFiles'] = {}
