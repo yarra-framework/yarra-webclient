@@ -97,9 +97,11 @@ window.addEventListener('load', function() {
 					$show_id('search_results_box');
 					return
 				}
-				$set_html('search_results',`
+				$set_html('search_results',
+				`<thead><tr><td>Name</td><td>MRN</td><td>ACC</td><td>Protocol</td><td>Date</td><td></td></tr></thead>
 				<tbody>
 				    ${$cat(r, a => `<tr><td>${a.patient_name}</td>
+                                         <td>${a.patient_id}</td>
 				    	 <td>${a.accession}</td> <td>${a.protocol}</td> 
 				    	 <td>${a.acquisition_date}&nbsp;${a.acquisition_time}</td>
 				    	 <td>

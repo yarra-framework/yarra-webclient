@@ -77,8 +77,9 @@ def search():
     if needle.find("+")==-1:
         e = db.session.query(yasArchive).filter((yasArchive.AccessionNumber == needle) |
                                                  yasArchive.PatientName.ilike("%{}%".format(needle)) |
-                                                 yasArchive.Filename.ilike("%{}%".format(needle)) | 
-                                                 yasArchive.ProtocolName.ilike("%{}%".format(needle))
+                                                 yasArchive.Filename.ilike("%{}%".format(needle)) |
+                                                 yasArchive.ProtocolName.ilike("%{}%".format(needle)) |
+                                                 (yasArchive.PatientID == needle)
                                                  ).order_by(yasArchive.WriteTime.desc()).offset(offset).limit(20).all()
     else:
         needles = [n.strip() for n in needle.split("+")]
@@ -91,7 +92,8 @@ def search():
                     " and ".join(["""(
                         PatientName like '%'||:needle{} ||'%' COLLATE NOCASE OR
                         ProtocolName like '%'||:needle{} ||'%' COLLATE NOCASE OR
-                        Filename like '%'||:needle{} ||'%' COLLATE NOCASE
+                        Filename like '%'||:needle{} ||'%' COLLATE NOCASE OR
+                        PatientID = :needle{} COLLATE NOCASE OR
                         )""".format(i,i,i) for i in range(len(needles))])
                     ))).\
                 params({'offset':offset,**{'needle{}'.format(i):needles[i] for i in range(len(needles))}}).all()
@@ -101,6 +103,7 @@ def search():
                            accession = e.AccessionNumber,
                            patient_name = e.PatientName,
                            filename = e.Filename,
+                           patient_id = e.PatientID,
                            acquisition_time = e.AcquisitionTime,
                            acquisition_date = e.AcquisitionDate,
                            protocol = e.ProtocolName,) for e in e])
@@ -285,8 +288,17 @@ def submit_task(): # todo: prevent submissions to incorrect servers
         if not app.config['YARRA_ARCHIVE_UPLOAD']:
             return abort(400, "Invalid")
         archive_object = db.session.query(yasArchive).filter(yasArchive.id == request.form.get('archive_id')).scalar()
-        path = os.path.join(archive_object.Path.replace('V:/Archive/','/media/archive/'))
+        path = os.path.join(archive_object.Path.replace('V:/Archive/','/archive/'))
         filepath = os.path.join(path, archive_object.Filename)
+        # path = os.path.join(archive_object.Path.replace('V:/Archive/','/archive/'))
+
+        # path_archived = os.path.join(archive_object.Path.replace('V:/Archive/','/archive_tape/'))
+
+        # filepath_archived = os.path.join(path_archived, archive_object.Filename)
+        # if os.path.exists(filepath_archived):
+        #     filepath = filepath_archived
+        # else: 
+        #     filepath = os.path.join(path, archive_object.Filename)
     else:
         filepath = os.path.join(app.config['YARRA_UPLOAD_BASE_DIR'], flask_login.current_user.id, request.form.get('file'))
 
