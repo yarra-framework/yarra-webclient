@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import re
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash,send_from_directory, jsonify, current_app
 from flask_sqlalchemy import SQLAlchemy
@@ -68,6 +69,35 @@ def each(a):
     return [x.__dict__ for x in a]
 
 
+@app.route('/batch_search')
+@login_required('submitter')
+def batch_search():
+    needle = request.args.get('needle')
+    offset = int(request.args.get('offset') or 0)
+    if not needle: return jsonify({"records": []})
+
+    accessions = re.split(",| |\n", needle)
+    accessions = [x for x in accessions if len(x)]
+    print(accessions)
+    e = (db.session
+        .query(yasArchive)
+        .filter((yasArchive.AccessionNumber.in_(accessions))
+                ).order_by(yasArchive.WriteTime.desc()).all())
+    accessions_found = set(x.AccessionNumber for x in e)
+    accessions_missing = set(accessions).difference(accessions_found)
+
+    return jsonify({"records":[dict(
+                id = e.id,
+                accession = e.AccessionNumber,
+                patient_name = e.PatientName,
+                filename = e.Filename,
+                patient_id = e.PatientID,
+                acquisition_time = e.AcquisitionTime,
+                acquisition_date = e.AcquisitionDate,
+                protocol = e.ProtocolName,) for e in e],
+                "accessions_missing": list(accessions_missing)
+            })
+
 @app.route('/search')
 @login_required('submitter')
 def search():
@@ -99,14 +129,14 @@ def search():
                 params({'offset':offset,**{'needle{}'.format(i):needles[i] for i in range(len(needles))}}).all()
 
 
-    result = jsonify([dict(id = e.id,
+    result = jsonify({"records": [dict(id = e.id,
                            accession = e.AccessionNumber,
                            patient_name = e.PatientName,
                            filename = e.Filename,
                            patient_id = e.PatientID,
                            acquisition_time = e.AcquisitionTime,
                            acquisition_date = e.AcquisitionDate,
-                           protocol = e.ProtocolName,) for e in e])
+                           protocol = e.ProtocolName,) for e in e]})
     return result
 
 @app.cli.command("test")
