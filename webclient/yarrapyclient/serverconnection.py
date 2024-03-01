@@ -22,11 +22,14 @@ class ServerConnection:
         self.close();
 
     def connect(self):        
-        if (self.dead):
+        if self.dead:
             raise Exception("dead connection raised to life")
         print("Connecting to",self.server_name)
         self.conn = SMBConnection(self.username, self.password, 'yarra-client', self.server_name)
-        self.conn.connect(self.server_name)
+        result = self.conn.connect(self.server_name)
+        if not result:
+            raise Exception("Server connection failed.")
+        print("Connected")
 
     def close(self):
         self.dead = True

@@ -268,7 +268,68 @@ def index():
     print(servers_dict)
     return render_template('submit.html', servers=servers, servers_dict = servers_dict)
 
+@app.route("/submit_tasks_batch", methods=['POST'])
+@login_required('submitter')
+@json_errors()
+def submit_task_batch():
+    print(request.form)
+    task_n = len(request.form.getlist("taskid"))
 
+    form_keys = ("protocol", "patient_name", "taskid", "accession")
+
+    lists = {x:request.form.getlist(x) for x in form_keys}
+
+    for l in lists.values():
+        if len(l) != task_n:
+            return abort(400, "Invalid request: mismatched lists")
+    
+    mode = db.session.query(ModeModel).join(ModeModel.server)\
+            .filter(ModeModel.name==request.form.get('mode'))\
+            .filter(YarraServer.name==request.form.get('server')).scalar()
+    
+    if not mode:
+        return abort(400, "Invalid mode")
+    
+    archive_object = db.session.query(yasArchive).filter(yasArchive.id == request.form.get('archive_id')).scalar()
+    path = os.path.join(archive_object.Path.replace('V:/Archive/','/archive/'))
+    filepath = os.path.join(path, archive_object.Filename)
+
+    processing = request.form.get('processing').lower()
+    priority = Priority.Normal
+    if processing == 'night':
+        priority = Priority.Night
+    elif processing == 'priority':
+        priority = Priority.High
+
+    tasks = []
+    for n in range(task_n):
+        yarra_task = YarraTask(
+                    user =         flask_login.current_user.user,
+                    mode =         mode,
+                    scan_file_path=filepath, 
+                    protocol =     lists["protocol"][n],
+                    patient_name = lists["patient_name"][n],
+                    name =         lists["taskid"][n]+datetime.now().strftime("_%Y%m%d_%H%M%S_%f"),
+                    accession =    lists["accession"][n],
+                    param_value =  request.form.get('param'),
+                    priority =     priority,
+                    extra_files =  []
+                    )
+        print(yarra_task)
+        test_t = Task.from_other(yarra_task) # will throw if this is an invalid task
+        tasks.append(yarra_task)
+    
+    for t in tasks:
+        db.session.add(t)
+        db.session.commit()
+
+    print("submitting")
+    for t in tasks:
+        background_submit.delay(t.id)
+        print(yarra_task)
+    flash(f"{task_n} tasks are being submitted.","success")
+
+    return "OK"
 
 @app.route("/submit_task", methods=['POST'])
 @login_required('submitter')
@@ -337,19 +398,5 @@ def submit_task(): # todo: prevent submissions to incorrect servers
     print(yarra_task)
     flash("Task is being submitted.","success")
     return "OK"
-    # t = Task(mode, 
-    # # background_submit.delay(request.form.get('mode'),request.form.get('server'),
-    #     filepath,
-    #      request.form.get('protocol'), 
-    #      request.form.get('patient_name'),
-    #      request.form.get('taskid'),
-    #      request.form.get('accession',None),
-    #      priority,
-    #      [os.path.join(app.config['YARRA_UPLOAD_BASE_DIR'], flask_login.current_user.id, f) for f in extra_files if f]
-    #      )
-    # print("submitting")
-    # t.submit()
-    # print("done")
-    # return "OK"
 if __name__ == "__main__":
     app.run()

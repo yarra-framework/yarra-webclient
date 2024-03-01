@@ -1,21 +1,23 @@
 const $id = i => document.getElementById(i)
 const $s = i => document.querySelectorAll(i)
-const $disable = i => i.setAttribute('disabled', true);
-const $disable_id = i => $id(i).setAttribute('disabled', true);
 
-const $enable = i => i.removeAttribute('disabled');
-const $enable_id = i => $id(i).removeAttribute('disabled');
+const $disable = e => { e.setAttribute('disabled', true); return e;}
+const $disable_id = i => {e=$id(i); e.setAttribute('disabled', true); return e}
 
-const $show = i => i.classList.remove('d-none');
-const $show_id = i => $id(i).classList.remove('d-none');
+const $enable = e => {e.removeAttribute('disabled'); return e;}
+const $enable_id = i => {e=$id(i); e.removeAttribute('disabled'); return e}
 
-const $hide = i => i.classList.add('d-none');
-const $hide_id = i => $id(i).classList.add('d-none');
+const $show = e => {e.classList.remove('d-none'); return e;}
+const $show_id = i => {e=$id(i); e.classList.remove('d-none'); return e}
+
+const $hide = i => {i.classList.add('d-none'); return i;}
+const $hide_id = i => {e=$id(i); e.classList.add('d-none'); return e}
 
 const $cat = (r,f) => r.map(f).join('')
-const $set_html = (id, val) => $id(id).innerHTML = val;
+const $set_html = (i, val) => {e=$id(i); e.innerHTML = val; return e}
+const $append_html = (i, val) => {e=$id(i); e.innerHTML += val; return e}
 
-var pick_case = (id, patient, protocol, date, acc, filename) => {
+var pick_case = (evt, id, patient, protocol, date, acc, filename) => {
 	$id('search_box').value = [patient,protocol,date].join('; ');
 	$id('search_box').setAttribute("readonly",true);
 
@@ -30,6 +32,25 @@ var pick_case = (id, patient, protocol, date, acc, filename) => {
 	archive_case = {id:id, filename:filename}
 }
 
+batch_cases = {}
+var toggle_case = (evt, id, patient_name, protocol, date, accession, filename) => {
+	if (id in batch_cases) {
+		delete batch_cases[id]
+		if (!Object.keys(batch_cases).length) {
+			$disable_id('submit_btn');
+		}
+		console.log(batch_cases)
+		return false;	
+	} else {
+		batch_cases[id] = {id, filename, patient_name, protocol, date, accession, taskid: filename.split('.').slice(0, -1).join('.')}
+		evt.target.innerHTML = "OK"
+		$enable_id('submit_btn');
+		$id('batch_box').setAttribute("readonly",true);
+		console.log(batch_cases)
+		return true;
+	}
+}
+
 var archive_case = null
 var submit_mode = "upload"
 var search_offset = 0
@@ -37,6 +58,7 @@ var search_page_length = 20
 window.addEventListener('load', function() {
     const form = $id('form');
 	const progress = $id('progress');
+
 
 	const uploader = new Resumable({target:'/resumable_upload', chunkSize:1024*1024*10});
 
@@ -52,7 +74,8 @@ window.addEventListener('load', function() {
 
 	$disable_id('extra_files');
 	$s('#nav-tab .nav-item').forEach(
-		e => e.onclick = (ev) => {
+		e => {
+			e.onclick = (ev) => {
 			ev.preventDefault();
 			$s('#nav-tab .nav-item').forEach(e=>e.classList.remove('active'))
 			$s('#nav-tabContent .tab-pane').forEach(e=>{e.classList.remove('show'); e.classList.remove('active')})
@@ -60,30 +83,57 @@ window.addEventListener('load', function() {
 			let tab = e.getAttribute('aria-controls')
 			$id(tab).classList.add('active')
 			$id(tab).classList.add('show')
-			console.log(tab);
 			if (tab == "nav-upload") {
 				submit_mode = "upload"
+				window.location.hash = '#upload'
 				$id('files').setAttribute('required', true);
 				$enable_id('files');
 			    $disable_id('search_box');
-			} else if (tab == "nav-archive") {
-				submit_mode = "archive"
-				$disable_id('files');
+			} else {
 				$id('files').removeAttribute('required');
 				$id('files').value = '';
 				$id('extra_files').value = '';
 			    $s('.custom-file-label').forEach(e=>e.innerHTML = e.getAttribute('default'))
 			    $disable_id('extra_files');
-			    $enable_id('search_box');
 			}
+			if (tab == "nav-archive" && submit_mode != "archive") {
+				submit_mode = "archive"
+				window.location.hash = '#archive'
+			    $enable_id('search_box');
+				$hide_id('search_results_box');
+				$set_html('search_results','');
+			}
+			if (tab == "nav-batch" && submit_mode != "batch") {
+				submit_mode = "batch"
+				$hide_id('scan_information_box')
+				window.location.hash = '#batch'
+				$id('patientName').removeAttribute('required');
+				$id('taskId').removeAttribute('required');
+				$enable_id('batch_box');
+				$set_html('search_results','');
+				$hide_id('search_results_box')
+			} else {
+				$id('patientName').setAttribute('required', true);
+				$id('taskId').setAttribute('required', true);
+				$hide_id('accessions_missing')
+			}
+		};
+		tab = e.getAttribute('aria-controls')
+		if (tab == "nav-archive" && window.location.hash == '#archive') {
+			e.click()
+		}
+		if (tab == "nav-batch" && window.location.hash == '#batch') {
+			e.click()
+		}
+	})
 
-		})
-
-	var search = function(needle, offset) {
-	    url = "/search?needle="+encodeURIComponent(needle)+"&offset="+offset||0
-		fetch(url, {
+	var search = function(needle, offset, endpoint="search") {
+	    url = `/${endpoint}?needle=${encodeURIComponent(needle)}&offset=${offset||0}`;
+		return fetch(url, {
 			    method: 'get',
-			}).then(r=>r.json()).then( r => {
+			}).then(r=>r.json()).then( k => {
+				console.log(k);
+				r = k.records;
 				search_page_length = r.length;
 				if ( r.length == 0 ) {
 					if (offset == 0) {
@@ -95,21 +145,24 @@ window.addEventListener('load', function() {
 					}
 					$hide_id('search_next_btn');
 					$show_id('search_results_box');
-					return
+					return k;
 				}
 				$set_html('search_results',
 				`<thead><tr><td>Name</td><td>MRN</td><td>ACC</td><td>Protocol</td><td>Date</td><td></td></tr></thead>
 				<tbody>
-				    ${$cat(r, a => `<tr><td>${a.patient_name}</td>
-                                         <td>${a.patient_id}</td>
-				    	 <td>${a.accession}</td> <td>${a.protocol}</td> 
-				    	 <td>${a.acquisition_date}&nbsp;${a.acquisition_time}</td>
-				    	 <td>
-							<div class="form-check form-check-inline mt-2">
-							  <button class="btn btn-primary" 
-							  	onclick="event.preventDefault(); pick_case(${a.id},'${a.patient_name}','${a.protocol}', '${a.acquisition_date}', '${a.accession}','${a.filename}');">Select</button>
-							</div>
-						 </td>
+				    ${$cat(r, a => 
+						`<tr>
+						    <td>${a.patient_name}</td>
+						    <td>${a.patient_id}</td>
+				    	    <td>${a.accession}</td> 
+						    <td>${a.protocol}</td> 
+				    	    <td>${a.acquisition_date}&nbsp;${a.acquisition_time}</td>
+				    	    <td style="padding: 0px">
+						 	    <div class="form-check form-check-inline">
+							        <button class="btn btn-primary btn-sm mt-2" 
+							    	onclick="event.preventDefault(); ${submit_mode == 'archive'? 'pick_case' : 'toggle_case'}(event, ${a.id},'${a.patient_name}','${a.protocol}', '${a.acquisition_date}', '${a.accession}','${a.filename}');">Select</button>
+							    </div>
+						    </td>
 				    	 </tr>`)}
 				</tbody>`);
 				if (offset > 0) {
@@ -124,7 +177,32 @@ window.addEventListener('load', function() {
 				
 				}
 				$show_id('search_results_box');
+				return k;
 		})
+	}
+	$id('batch_btn').onclick = function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		search_box = $id('batch_box');
+		search_offset = 0
+		search(search_box.value,0,"batch_search").then(result => {
+			records = result.records
+			for (r of records) {
+				r.taskid = r.filename.split('.').slice(0, -1).join('.')
+				batch_cases[r.id] = r
+			}
+			if (result.accessions_missing) {
+				$show_id('accessions_missing').innerHTML = `<summary>Accessions not found</summary>
+				${$cat(result.accessions_missing, (acc) => acc+"<br>")}`;
+				console.warn(result.accessions_missing)
+			}
+			// if (result.records) {
+			// 	$enable_id('submit_btn');
+			// } else {
+				$disable_id('submit_btn');
+			// }
+			console.log(batch_cases);
+		});
 	}
 	if ($id('search_btn')) {
 		$id('search_btn').onclick = function(e) {
@@ -180,6 +258,9 @@ window.addEventListener('load', function() {
 	$s('#modes select').forEach( mode_select => {
 		mode_select.onchange = e => {
 			mode_details = (servers[$id('server').value][e.target.value]);
+			if (!mode_details) {
+				return;
+			}
 			console.log(mode_details);
 			if(mode_details['requires_acc']) {
 				$id('accession').setAttribute('required',true);
@@ -233,7 +314,9 @@ window.addEventListener('load', function() {
 			// [...form.elements].forEach(field => field.setAttribute("readonly",true));
 			submit_form()
 			//reset_form()
-    	}
+    	} else if (submit_mode == 'batch') {
+			submit_form_batch()
+		}
 
 		uploader.isComplete = false;
 		uploader.wasCanceled = false;
@@ -289,10 +372,53 @@ window.addEventListener('load', function() {
 	});
 
 
-  if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-    Notification.requestPermission()
-  };
 }, false);
+document.addEventListener('click', () => {
+	if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+		Notification.requestPermission()
+	};
+});
+
+function submit_form_batch() {
+	const form = $id('form');
+	const body = new FormData(form);
+	body.set('mode',body.get('mode_'+body.get('server')))
+	body.delete('mode_'+body.get('server'))
+
+	progress.textContent = 'Finalizing...';
+	progress.classList.toggle('bg-info');
+
+	body.delete('archive_id');
+	body.delete('archive_file');
+	body.delete('protocol');
+	body.delete('accession');
+	body.delete('taskid');
+	body.delete('patient_name');
+
+	for (var c of Object.values(batch_cases)) {
+		body.append('archive_id', c.id);
+		body.append('archive_file', c.filename);
+		body.append('protocol', c.protocol);
+		body.append('accession', c.accession);
+		body.append('taskid', c.taskid);
+		body.append('patient_name', c.patient_name);
+	}
+	$id('progress-outer').classList.toggle("expanded"); 
+	fetch('/submit_tasks_batch', {
+	    method: "POST",
+	    body: body
+	}).then( response => {
+		progress.classList.toggle('bg-info');
+	    if (!response.ok) {
+	    	response.json().then(r=>{
+		        alert("Error: "+r.description);
+				throw Error(r.description);
+	    	})
+		}
+		$id('progress-outer').classList.toggle("expanded"); 
+		window.location.reload()
+	});
+}
 
 function submit_form(){
 	const form = $id('form');
