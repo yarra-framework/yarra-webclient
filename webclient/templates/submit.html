@@ -54,7 +54,7 @@
 	<div class="row">
 		<div>
 		<div class= "custom-file">
-			<input type="file" class="form-control custom-file-input" id="accession_file" name="file" accept=".txt" required/>
+			<input type="file" class="form-control custom-file-input" id="accession_file" name="file" accept=".txt"/>
 		    <label for="files" class="custom-file-label" default="Load from file" >Load from file</label>
 		    <div class="invalid-feedback">
 			    A file is required.
@@ -208,7 +208,7 @@
 </form>
 </div>
 <div class="progress fixed-bottom m-2" id="progress-outer" >
-  <div id="progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>
+  <div id="progress" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 100%;"></div>
 </div>
 {% endblock %}
 

@@ -103,14 +103,14 @@ def batch_search():
 def search():
     needle = request.args.get('needle')
     offset = int(request.args.get('offset') or 0)
-    if not needle: return jsonify([])
+    if not needle: return jsonify({"records":[]})
     if needle.find("+")==-1:
         e = db.session.query(yasArchive).filter((yasArchive.AccessionNumber == needle) |
                                                  yasArchive.PatientName.ilike("%{}%".format(needle)) |
                                                  yasArchive.Filename.ilike("%{}%".format(needle)) |
                                                  yasArchive.ProtocolName.ilike("%{}%".format(needle)) |
                                                  (yasArchive.PatientID == needle)
-                                                 ).order_by(yasArchive.WriteTime.desc()).offset(offset).limit(20).all()
+                                                 ).order_by(yasArchive.WriteTime.desc()).offset(offset).limit(request.args.get('limit', 20)).all()
     else:
         needles = [n.strip() for n in needle.split("+")]
         e = db.session.query(yasArchive).from_statement(
@@ -298,11 +298,10 @@ def index():
     print(servers_dict)
     return render_template('submit.html', servers=servers, servers_dict = servers_dict)
 
-@app.route("/submit_tasks_batch", methods=['POST'])
+@app.route("/submit_tasks", methods=['POST'])
 @login_required('submitter')
 @json_errors()
-def submit_task_batch():
-    print(request.form)
+def submit_tasks():
     task_n = len(request.form.getlist("taskid"))
 
     form_keys = ("protocol", "patient_name", "taskid", "accession")
@@ -319,10 +318,17 @@ def submit_task_batch():
     
     if not mode:
         return abort(400, "Invalid mode")
-    
-    archive_object = db.session.query(yasArchive).filter(yasArchive.id == request.form.get('archive_id')).scalar()
-    path = os.path.join(archive_object.Path.replace('V:/Archive/','/archive/'))
-    filepath = os.path.join(path, archive_object.Filename)
+
+    if request.form.get('archive_id'):
+        if not app.config['YARRA_ARCHIVE_UPLOAD']:
+            return abort(400, "Invalid")
+        archive_object = db.session.query(yasArchive).filter(yasArchive.id == request.form.get('archive_id')).scalar()
+        path = os.path.join(archive_object.Path.replace('V:/Archive/','/archive/'))
+        filepath = os.path.join(path, archive_object.Filename)
+    else:
+        if not request.form.get('file'):
+            return abort(400, "'file' parameter missing")
+        filepath = os.path.join(app.config['YARRA_UPLOAD_BASE_DIR'], flask_login.current_user.id, request.form.get('file'))
 
     processing = request.form.get('processing').lower()
     priority = Priority.Normal
@@ -356,77 +362,9 @@ def submit_task_batch():
     print("submitting")
     for t in tasks:
         background_submit.delay(t.id)
-        print(yarra_task)
     flash(f"{task_n} tasks are being submitted.","success")
 
     return "OK"
 
-@app.route("/submit_task", methods=['POST'])
-@login_required('submitter')
-@json_errors()
-def submit_task(): # todo: prevent submissions to incorrect servers
-    if request.form.get('extra_files') != 'undefined':
-        extra_files = request.form.getlist('extra_files')
-    else:
-        extra_files = []
-    print('extra_files',extra_files)
-    print(request.form)
-    for k in ['mode','server','protocol','patient_name','taskid', 'processing']:
-        if not request.form.get(k):
-            return abort(400, "Missing field: '{}' is empty.".format(k))
-
-    if request.form.get('archive_id'):
-        if not app.config['YARRA_ARCHIVE_UPLOAD']:
-            return abort(400, "Invalid")
-        archive_object = db.session.query(yasArchive).filter(yasArchive.id == request.form.get('archive_id')).scalar()
-        path = os.path.join(archive_object.Path.replace('V:/Archive/','/archive/'))
-        filepath = os.path.join(path, archive_object.Filename)
-        # path = os.path.join(archive_object.Path.replace('V:/Archive/','/archive/'))
-
-        # path_archived = os.path.join(archive_object.Path.replace('V:/Archive/','/archive_tape/'))
-
-        # filepath_archived = os.path.join(path_archived, archive_object.Filename)
-        # if os.path.exists(filepath_archived):
-        #     filepath = filepath_archived
-        # else: 
-        #     filepath = os.path.join(path, archive_object.Filename)
-    else:
-        filepath = os.path.join(app.config['YARRA_UPLOAD_BASE_DIR'], flask_login.current_user.id, request.form.get('file'))
-
-    mode = db.session.query(ModeModel).join(ModeModel.server)\
-                .filter(ModeModel.name==request.form.get('mode'))\
-                .filter(YarraServer.name==request.form.get('server')).scalar()
-
-    if not mode:
-        return abort(400, "Invalid mode")
-
-    processing = request.form.get('processing').lower()
-    priority = Priority.Normal
-    if processing == 'night':
-        priority = Priority.Night
-    elif processing == 'priority':
-        priority = Priority.High
-
-    yarra_task = YarraTask(
-                 user =         flask_login.current_user.user,
-                 mode =         mode,
-                 scan_file_path=filepath, 
-                 protocol =     request.form.get('protocol'),
-                 patient_name = request.form.get('patient_name'),
-                 name =         request.form.get('taskid')+datetime.now().strftime("_%Y%m%d_%H%M%S_%f"),
-                 accession =    request.form.get('accession'),
-                 param_value =  request.form.get('param'),
-                 priority =     priority,
-                 extra_files =  [os.path.join(app.config['YARRA_UPLOAD_BASE_DIR'], flask_login.current_user.id, f) for f in extra_files if f]
-                 )
-    test_t = Task.from_other(yarra_task) # will throw if this is an invalid task
-    db.session.add(yarra_task)
-    db.session.commit()
-
-    print("submitting");
-    background_submit.delay(yarra_task.id)
-    print(yarra_task)
-    flash("Task is being submitted.","success")
-    return "OK"
 if __name__ == "__main__":
     app.run()
